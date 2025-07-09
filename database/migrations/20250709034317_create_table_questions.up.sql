@@ -1,0 +1,7 @@
+CREATE TABLE questions (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    quiz_id INT UNSIGNED NOT NULL,
+    question_text TEXT NOT NULL,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+    PRIMARY KEY (id)
+);
