@@ -1,0 +1,15 @@
+# Environment Variables
+.env
+
+# OS Generate Files
+.DS_Store
+Thumbs.db
+
+# app build result
+api-contact-form
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
