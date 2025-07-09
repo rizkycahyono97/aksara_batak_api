@@ -8,4 +8,5 @@ import (
 
 type AuthService interface {
 	Register(ctx context.Context, req web.RegisterUserRequest) (domain.Users, error)
+	Login(ctx context.Context, req web.LoginUserRequest) (string, error)
 }
