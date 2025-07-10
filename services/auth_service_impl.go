@@ -15,12 +15,14 @@ import (
 	"time"
 )
 
+// dependency
 type AuthServiceImpl struct {
 	Repo     repositories.AuthRepository
 	Validate *validator.Validate
 	Log      *slog.Logger
 }
 
+// dependncy injection
 func NewAuthService(repo repositories.AuthRepository, validate *validator.Validate, log *slog.Logger) AuthService {
 	return &AuthServiceImpl{
 		Repo:     repo,
@@ -41,7 +43,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, req web.RegisterUserRequ
 	_, err := s.Repo.FindUserByEmail(ctx, req.Email)
 	if err == nil {
 		s.Log.WarnContext(ctx, "register attempt failed: email has been taken", "email", req.Email)
-		return domain.Users{}, errors.New("user already exists")
+		return domain.Users{}, errors.New("email already exists")
 	}
 
 	//hash password
