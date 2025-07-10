@@ -92,7 +92,7 @@ func (s *AuthServiceImpl) Login(ctx context.Context, req web.LoginUserRequest) (
 	//membadingkan password
 	if err := bcrypt.CompareHashAndPassword([]byte(req.Password), []byte(user.PasswordHash)); err != nil {
 		s.Log.WarnContext(ctx, "login attempt failed: password mismatch", "email", req.Email, "userID", user.UUID)
-		return "", errors.New("invalid password")
+		return "", errors.New("invalid email or password")
 	}
 
 	//buat token jwt jika cocok
