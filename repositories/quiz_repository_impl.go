@@ -15,6 +15,8 @@ func NewQuizRepository(db *gorm.DB) QuizRepository {
 	return &QuizRepositoryImpl{db}
 }
 
+// method untuk mencari semua quiz, dan
+// dengan beberapa filter seperti dialect, level, dan title
 func (r *QuizRepositoryImpl) FindAllQuizzes(ctx context.Context, filters web.FilterQuizRequest) ([]domain.Quizzes, error) {
 	var quizzes []domain.Quizzes
 
@@ -38,4 +40,23 @@ func (r *QuizRepositoryImpl) FindAllQuizzes(ctx context.Context, filters web.Fil
 	}
 
 	return quizzes, nil
+}
+
+// method ini hanya mengambil satu id dari QuizID
+// digunakan untuk memulai satu sesi kuis
+func (r *QuizRepositoryImpl) FindQuestionIDsByQuizID(ctx context.Context, quizID uint) ([]uint, error) {
+	//untuk hasil pertanyaan
+	var questionsIDs []uint
+
+	//query ke table questions, filter berdasarkan quiz_id
+	// pluck -> SELECT id FROM questions WHERE quiz_id = {quizID};
+	err := r.db.WithContext(ctx).
+		Model(domain.Questions{}).
+		Where("quiz_id = ?", quizID).
+		Pluck("id", &questionsIDs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return questionsIDs, err
 }

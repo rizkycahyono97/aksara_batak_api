@@ -8,4 +8,5 @@ import (
 
 type QuizRepository interface {
 	FindAllQuizzes(ctx context.Context, filters web.FilterQuizRequest) ([]domain.Quizzes, error)
+	FindQuestionIDsByQuizID(ctx context.Context, quizID uint) ([]uint, error)
 }
