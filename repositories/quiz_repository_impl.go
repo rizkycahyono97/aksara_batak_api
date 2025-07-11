@@ -60,3 +60,21 @@ func (r *QuizRepositoryImpl) FindQuestionIDsByQuizID(ctx context.Context, quizID
 
 	return questionsIDs, err
 }
+
+// method untuk mengambil detail lengkap dalam 1 pertanyaan
+// termasuk semua jawaban dari 1 soal tersebut
+func (r *QuizRepositoryImpl) FindQuestionWithOptions(ctx context.Context, questionID uint) (domain.Questions, error) {
+	var question domain.Questions
+
+	//query -> melakukan preload ke QuestionOptions untuk mengambil semua jawaban dalam 1 jawaban
+	// SELECT * FROM questions WHERE questionsID
+	err := r.db.WithContext(ctx).
+		Preload("QuestionOptions").
+		Where("id", questionID).
+		First(&question).Error
+	if err != nil {
+		return domain.Questions{}, err
+	}
+
+	return question, nil
+}
