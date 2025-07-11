@@ -99,12 +99,20 @@ func (s *AuthServiceImpl) Login(ctx context.Context, req web.LoginUserRequest) (
 	//jwt token
 	//===============
 	//create new token with the specified signing method and claims
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"uuid":  user.UUID,
-		"email": user.Email,
-		"role":  user.Role,
-		"exp":   time.Now().Add(time.Hour * 72).Unix(),
-	})
+	expirationTime := time.Now().Add(72 * time.Hour)
+	claims := &web.JwtCustomClaims{
+		UUID: user.UUID,
+		Role: user.Role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    "lomba-batak-app",
+			Subject:   user.UUID, // 'sub' adalah standar untuk ID user
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	// Buat token dengan claims custom
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	//secret key
 	secret := config.GetEnv("JWT_SECRET_KEY", "")
