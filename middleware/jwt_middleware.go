@@ -9,12 +9,12 @@ import (
 // MIDDLEWARE JWT menggunakan jwtware
 // docs -> https://docs.gofiber.io/contrib/jwt/#install
 func JWTMiddleware() fiber.Handler {
-	jwtScret := []byte(config.GetEnv("JWT_SECRET", "super_secret_key_123!@#"))
+	jwtSecret := []byte(config.GetEnv("JWT_SECRET_KEY", ""))
 
 	return jwtware.New(jwtware.Config{
 		SigningKey: jwtware.SigningKey{
 			JWTAlg: "HS256",
-			Key:    jwtScret,
+			Key:    jwtSecret,
 		},
 		//successhandler akan menyimpan di c.Locals (context)
 		SuccessHandler: func(c *fiber.Ctx) error {

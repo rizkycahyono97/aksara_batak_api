@@ -6,9 +6,6 @@ import (
 )
 
 func SetupRoutes(app *fiber.App, authController *controllers.AuthController) {
-	//instance
-	app = fiber.New()
-
 	//intance middleware
 	//jwtMiddleware := middleware.JWTMiddleware()
 

@@ -32,7 +32,7 @@ func NewAuthService(repo repositories.AuthRepository, validate *validator.Valida
 }
 
 func (s *AuthServiceImpl) Register(ctx context.Context, req web.RegisterUserRequest) (domain.Users, error) {
-	s.Log.InfoContext(ctx, "register process started", "name", req.Password, "email", req.Email)
+	s.Log.InfoContext(ctx, "register process started", "name", req.Name, "email", req.Email)
 	//validation
 	if err := s.Validate.Struct(req); err != nil {
 		s.Log.ErrorContext(ctx, "validation failed for register request", "error", err)
@@ -90,37 +90,35 @@ func (s *AuthServiceImpl) Login(ctx context.Context, req web.LoginUserRequest) (
 	}
 
 	//membadingkan password
-	if err := bcrypt.CompareHashAndPassword([]byte(req.Password), []byte(user.PasswordHash)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		s.Log.WarnContext(ctx, "login attempt failed: password mismatch", "email", req.Email, "userID", user.UUID)
 		return "", errors.New("invalid email or password")
 	}
 
-	//buat token jwt jika cocok
-	expirationDate := time.Now().Add(72 * time.Hour) // expiration jwt token
+	//===============
+	//jwt token
+	//===============
+	//create new token with the specified signing method and claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"uuid":  user.UUID,
+		"email": user.Email,
+		"role":  user.Role,
+		"exp":   time.Now().Add(time.Hour * 72).Unix(),
+	})
 
-	//jwt claims
-	claims := &jwt.RegisteredClaims{
-		Issuer:    "lomba-batak-app",
-		Subject:   user.UUID,
-		ExpiresAt: jwt.NewNumericDate(expirationDate),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-	}
-
-	//jwt sceret key
-	secret := config.GetEnv("JWT_SECRET", "")
+	//secret key
+	secret := config.GetEnv("JWT_SECRET_KEY", "")
 	if secret == "" {
-		return "", errors.New("JWT_SECRET environment variable not set")
+		s.Log.ErrorContext(ctx, "JWT_SECRET_KEY not configured", "error", err)
+		return "", errors.New("JWT_SECRET_KEY not configured")
 	}
 
-	//buat jwt token final
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	//tandatangan jwt token dengan jwt secret key kita
-	signedToken, err := token.SignedString(secret)
+	//signed token with secret key
+	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
+		s.Log.ErrorContext(ctx, "failed to sign token", "error", err)
 		return "", errors.New("failed to sign token")
 	}
-	s.Log.InfoContext(ctx, "user logged in successfully", "userID", user.UUID)
 
-	return signedToken, nil
+	return tokenString, nil
 }
