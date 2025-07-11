@@ -23,6 +23,8 @@ func NewQuizServiceImpl(repo repositories.QuizRepository, validate *validator.Va
 	}
 }
 
+// mengambil semua quiz yang ada
+// menerima filter di untuk level, dialect, title
 func (s QuizServiceImpl) GetAllQuizzes(ctx context.Context, filters web.FilterQuizRequest) ([]web.QuizResponse, error) {
 	s.Log.InfoContext(ctx, "get all quizzes process started", "dialect", filters.Dialect)
 
