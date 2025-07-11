@@ -78,3 +78,19 @@ func (r *QuizRepositoryImpl) FindQuestionWithOptions(ctx context.Context, questi
 
 	return question, nil
 }
+
+// method untuk menemukan jawaban yang benar dari sebuah questions
+func (r *QuizRepositoryImpl) FindCorrectOptionID(ctx context.Context, questionID uint) (uint, error) {
+	var correctOptionID uint
+
+	//query untuk menentukan is_correct == true
+	err := r.db.WithContext(ctx).
+		Model(&domain.QuestionOptions{}).
+		Where("question_id = ? AND is_correct = ?", questionID, true).
+		Pluck("id", &correctOptionID).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return correctOptionID, nil
+}
