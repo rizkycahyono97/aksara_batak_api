@@ -105,7 +105,7 @@ func (s *AuthServiceImpl) Login(ctx context.Context, req web.LoginUserRequest) (
 		Role: user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "lomba-batak-app",
-			Subject:   user.UUID, // 'sub' adalah standar untuk ID user
+			Subject:   user.Name,
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
