@@ -15,7 +15,7 @@ type QuizServiceImpl struct {
 	Log      *slog.Logger
 }
 
-func NewQuizServiceImpl(repo repositories.QuizRepository, validate *validator.Validate, log *slog.Logger) QuizService {
+func NewQuizService(repo repositories.QuizRepository, validate *validator.Validate, log *slog.Logger) QuizService {
 	return &QuizServiceImpl{
 		Repo:     repo,
 		Validate: validate,

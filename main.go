@@ -31,14 +31,19 @@ func main() {
 	config.InitDB()
 	validate := validator.New()
 
-	//dependency injection
+	// === DEPENDENCY INJECTION ===
+	// rantai auth
 	authRepo := repositories.NewAuthRepository(config.DB)
 	authService := services.NewAuthService(authRepo, validate, logger)
 	authController := controllers.NewAuthController(authService, logger)
+	// Rantai Quiz
+	quizRepo := repositories.NewQuizRepository(config.DB)
+	quizService := services.NewQuizService(quizRepo, validate, logger)
+	quizController := controllers.NewQuizController(quizService, logger)
 
 	//initialize fiber
 	app := fiber.New()
-	routes.SetupRoutes(app, authController)
+	routes.SetupRoutes(app, authController, quizController)
 
 	//gracefull shutdown
 	quit := make(chan os.Signal, 1)

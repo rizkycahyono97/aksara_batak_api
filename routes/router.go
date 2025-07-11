@@ -3,11 +3,12 @@ package routes
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/rizkycahyono97/aksara_batak_api/controllers"
+	"github.com/rizkycahyono97/aksara_batak_api/middleware"
 )
 
-func SetupRoutes(app *fiber.App, authController *controllers.AuthController) {
+func SetupRoutes(app *fiber.App, authController *controllers.AuthController, quizController *controllers.QuizController) {
 	//intance middleware
-	//jwtMiddleware := middleware.JWTMiddleware()
+	jwtMiddleware := middleware.JWTMiddleware()
 
 	//group
 	publik := app.Group("/api/v1")
@@ -15,5 +16,6 @@ func SetupRoutes(app *fiber.App, authController *controllers.AuthController) {
 	publik.Post("/register", authController.Register)
 
 	//private route
-	//private := app.Group("/api/v1", jwtMiddleware)
+	private := app.Group("/api/v1", jwtMiddleware)
+	private.Get("/quizzes", quizController.GetAllQuizzes)
 }
