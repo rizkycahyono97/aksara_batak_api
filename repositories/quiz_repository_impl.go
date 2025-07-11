@@ -94,3 +94,13 @@ func (r *QuizRepositoryImpl) FindCorrectOptionID(ctx context.Context, questionID
 
 	return correctOptionID, nil
 }
+
+// menyimpan satu record question ke quiz_attempts
+func (r *QuizRepositoryImpl) CreateQuizAttempt(ctx context.Context, attempt *domain.QuizAttempts) error {
+	err := r.db.WithContext(ctx).Create(attempt).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
