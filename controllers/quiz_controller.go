@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/rizkycahyono97/aksara_batak_api/model/web"
 	"github.com/rizkycahyono97/aksara_batak_api/services"
 	"log/slog"
@@ -142,5 +143,63 @@ func (c *QuizController) GetAllQuizzes(f *fiber.Ctx) error {
 		Message: "STATUS_OK",
 
 		Data: quizzess,
+	})
+}
+
+func (c *QuizController) StartQuiz(f *fiber.Ctx) error {
+	c.Log.InfoContext(f.Context(), "start quiz")
+
+	//mengambil query params quizID
+	quizIDStr := f.Query("quizID")
+	id, err := strconv.Atoi(quizIDStr)
+	if err != nil {
+		c.Log.InfoContext(f.Context(), "quizID parse error", "quizID", quizIDStr)
+		return f.Status(fiber.StatusBadRequest).JSON(web.ApiResponse{
+			Code:    "400",
+			Message: "BAD REQUEST",
+			Data:    nil,
+		})
+	}
+	quizID := uint(id)
+
+	//mengambil userID dari jwt
+	userToken := f.Locals("user").(*jwt.Token)
+	claims := userToken.Claims.(jwt.MapClaims)
+	userID := claims["uuid"].(string)
+
+	if userID == "" {
+		c.Log.ErrorContext(f.Context(), "failed to get user ID from JWT claims")
+		return f.Status(fiber.StatusUnauthorized).JSON(web.ApiResponse{
+			Code:    "401",
+			Message: "Unauthorized",
+			Data:    nil,
+		})
+	}
+
+	//service layer
+	response, err := c.QuizService.StartQuiz(f.Context(), quizID, userID)
+	if err != nil {
+		if err.Error() == "quiz has no questions" {
+			c.Log.ErrorContext(f.Context(), "quiz has no questions", "quizID", quizID)
+			return f.Status(fiber.StatusNotFound).JSON(web.ApiResponse{
+				Code:    "404",
+				Message: "quiz not found",
+				Data:    nil,
+			})
+		}
+
+		c.Log.ErrorContext(f.Context(), "Internal Server Error")
+		return f.Status(fiber.StatusInternalServerError).JSON(web.ApiResponse{
+			Code:    "500",
+			Message: "INTERNAL SERVER ERROR",
+			Data:    nil,
+		})
+	}
+
+	c.Log.InfoContext(f.Context(), "quiz started successfully", "sessionID", response.SessionID, "userID", userID)
+	return f.Status(fiber.StatusOK).JSON(web.ApiResponse{
+		Code:    "200",
+		Message: "Quiz Started Succesfully",
+		Data:    response,
 	})
 }
