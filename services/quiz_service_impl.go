@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/rizkycahyono97/aksara_batak_api/model/web"
@@ -79,6 +80,12 @@ func (s QuizServiceImpl) StartQuiz(ctx context.Context, quizID uint, userID stri
 	if err != nil {
 		s.Log.InfoContext(ctx, "failed to find questions IDs", "quizID", quizID, "userID", userID)
 		return web.QuizQuestionResponse{}, err
+	}
+
+	//cek jika quiz ada
+	if len(questionIDs) == 0 {
+		s.Log.InfoContext(ctx, "failed to find questions IDs", "quizID", quizID, "userID", userID)
+		return web.QuizQuestionResponse{}, errors.New("quiz not found or has no questions")
 	}
 
 	//mengacak urutan id question, supaya setiap questions bisa teracak

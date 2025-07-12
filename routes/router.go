@@ -18,5 +18,5 @@ func SetupRoutes(app *fiber.App, authController *controllers.AuthController, qui
 	//private route
 	private := app.Group("/api/v1", jwtMiddleware)
 	private.Get("/quizzes", quizController.GetAllQuizzes)
-	private.Post("/quizzes/:quizID/start", quizController.StartQuiz)
+	private.Get("/quizzes/:quizID/start", quizController.StartQuiz)
 }

@@ -149,9 +149,9 @@ func (c *QuizController) GetAllQuizzes(f *fiber.Ctx) error {
 func (c *QuizController) StartQuiz(f *fiber.Ctx) error {
 	c.Log.InfoContext(f.Context(), "start quiz")
 
-	//mengambil query params quizID
-	quizIDStr := f.Query("quizID")
-	id, err := strconv.Atoi(quizIDStr)
+	//mengambil query params quizID -> id dari quizzes
+	quizIDStr := f.Params("quizID")
+	id, err := strconv.ParseUint(quizIDStr, 10, 32)
 	if err != nil {
 		c.Log.InfoContext(f.Context(), "quizID parse error", "quizID", quizIDStr)
 		return f.Status(fiber.StatusBadRequest).JSON(web.ApiResponse{
@@ -179,7 +179,7 @@ func (c *QuizController) StartQuiz(f *fiber.Ctx) error {
 	//service layer
 	response, err := c.QuizService.StartQuiz(f.Context(), quizID, userID)
 	if err != nil {
-		if err.Error() == "quiz has no questions" {
+		if err.Error() == "quiz not found or has no questions" {
 			c.Log.ErrorContext(f.Context(), "quiz has no questions", "quizID", quizID)
 			return f.Status(fiber.StatusNotFound).JSON(web.ApiResponse{
 				Code:    "404",
