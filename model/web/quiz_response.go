@@ -7,3 +7,20 @@ type QuizResponse struct {
 	Level       string `json:"level"`
 	Dialect     string `json:"dialect"`
 }
+
+// DTO untuk satu pilihan jawaban
+// tidak ada is_correct untuk keamanan
+type QuestionOptionResponse struct {
+	ID   uint   `json:"id"`
+	Text string `json:"text"`
+}
+
+// DTO yang dikirim saat kuis dimulai
+// atau saat pertanyaan berikutnya ditampilkan
+type QuizQuestionResponse struct {
+	SessionID            string                   `json:"session_id"`
+	TotalQuestions       int                      `json:"total_questions"`
+	CurrentQuestionIndex int                      `json:"current_question_index"`
+	QuestionText         string                   `json:"question_text"`
+	Options              []QuestionOptionResponse `json:"options"`
+}

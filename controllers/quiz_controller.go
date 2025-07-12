@@ -122,11 +122,11 @@ func (c *QuizController) GetAllQuizzes(f *fiber.Ctx) error {
 
 		c.Log.ErrorContext(f.UserContext(), fmt.Sprintf("quizzess %s is empty", quizzess))
 
-		return f.Status(fiber.StatusNotFound).JSON(web.ApiResponse{
+		return f.Status(fiber.StatusOK).JSON(web.ApiResponse{
 
-			Code: "404",
+			Code: "200",
 
-			Message: "NOT_FOUND",
+			Message: "not found",
 
 			Data: nil,
 		})

@@ -7,4 +7,7 @@ import (
 
 type QuizService interface {
 	GetAllQuizzes(ctx context.Context, filters web.FilterQuizRequest) ([]web.QuizResponse, error)
+	StartQuiz(ctx context.Context, quizID uint, userID string) (web.QuizQuestionResponse, error)
+	//SubmitAnswer(ctx context.Context, request web.SubmitAnswerRequest) (web.QuizQuestionResponse, error)
+	//GetQuizAttemptResult(ctx context.Context, attemptID uint) (web.QuizAttemptResponse, error)
 }
