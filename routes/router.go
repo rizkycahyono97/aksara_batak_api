@@ -6,7 +6,12 @@ import (
 	"github.com/rizkycahyono97/aksara_batak_api/middleware"
 )
 
-func SetupRoutes(app *fiber.App, authController *controllers.AuthController, quizController *controllers.QuizController) {
+func SetupRoutes(
+	app *fiber.App,
+	authController *controllers.AuthController,
+	quizController *controllers.QuizController,
+	userProfileController *controllers.UserProfileController,
+) {
 	//intance middleware
 	jwtMiddleware := middleware.JWTMiddleware()
 
@@ -15,8 +20,16 @@ func SetupRoutes(app *fiber.App, authController *controllers.AuthController, qui
 	publik.Post("/login", authController.Login)
 	publik.Post("/register", authController.Register)
 
+	//=============
 	//private route
+	//=============
 	private := app.Group("/api/v1", jwtMiddleware)
+
+	// quiz
 	private.Get("/quizzes", quizController.GetAllQuizzes)
 	private.Get("/quizzes/:quizID/start", quizController.StartQuiz)
+
+	// userProfile
+	private.Get("/users/profile", userProfileController.GetMyProfile)
+	private.Put("/users/profile", userProfileController.UpdateMyProfile)
 }

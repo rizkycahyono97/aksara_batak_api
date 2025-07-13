@@ -40,10 +40,14 @@ func main() {
 	quizRepo := repositories.NewQuizRepository(config.DB)
 	quizService := services.NewQuizService(quizRepo, validate, logger)
 	quizController := controllers.NewQuizController(quizService, logger)
+	// user Profile
+	userProfileRepo := repositories.NewUserProfileRepository(config.DB)
+	userProfileService := services.NewUserProfileService(authRepo, userProfileRepo, validate, logger)
+	userProfileController := controllers.NewUserProfileController(userProfileService, logger)
 
 	//initialize fiber
 	app := fiber.New()
-	routes.SetupRoutes(app, authController, quizController)
+	routes.SetupRoutes(app, authController, quizController, userProfileController)
 
 	//gracefull shutdown
 	quit := make(chan os.Signal, 1)
