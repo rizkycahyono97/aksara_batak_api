@@ -17,17 +17,17 @@ import (
 
 // dependency
 type AuthServiceImpl struct {
-	Repo     repositories.AuthRepository
-	Validate *validator.Validate
-	Log      *slog.Logger
+	UserRepository repositories.UserRepository
+	Validate       *validator.Validate
+	Log            *slog.Logger
 }
 
 // dependncy injection
-func NewAuthService(repo repositories.AuthRepository, validate *validator.Validate, log *slog.Logger) AuthService {
+func NewAuthService(userRepository repositories.UserRepository, validate *validator.Validate, log *slog.Logger) AuthService {
 	return &AuthServiceImpl{
-		Repo:     repo,
-		Validate: validate,
-		Log:      log,
+		UserRepository: userRepository,
+		Validate:       validate,
+		Log:            log,
 	}
 }
 
@@ -40,7 +40,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, req web.RegisterUserRequ
 	}
 
 	//cek email
-	_, err := s.Repo.FindUserByEmail(ctx, req.Email)
+	_, err := s.UserRepository.FindUserByEmail(ctx, req.Email)
 	if err == nil {
 		s.Log.WarnContext(ctx, "register attempt failed: email has been taken", "email", req.Email)
 		return domain.Users{}, errors.New("email already exists")
@@ -64,7 +64,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, req web.RegisterUserRequ
 	s.Log.DebugContext(ctx, "assign to new object user", "user", userNew)
 
 	//simpan ke database
-	err = s.Repo.CreateUser(ctx, &userNew)
+	err = s.UserRepository.CreateUser(ctx, &userNew)
 	if err != nil {
 		s.Log.ErrorContext(ctx, "failed to create new user", "error", err)
 		return domain.Users{}, errors.New("failed to create user")
@@ -83,7 +83,7 @@ func (s *AuthServiceImpl) Login(ctx context.Context, req web.LoginUserRequest) (
 	}
 
 	//cari pengguna
-	user, err := s.Repo.FindUserByEmail(ctx, req.Email)
+	user, err := s.UserRepository.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		s.Log.WarnContext(ctx, "login attempt failed: user not found", "email", req.Email)
 		return "", errors.New("user not found")

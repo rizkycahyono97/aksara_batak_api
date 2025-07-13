@@ -33,7 +33,7 @@ func main() {
 
 	// === DEPENDENCY INJECTION ===
 	// rantai auth
-	authRepo := repositories.NewAuthRepository(config.DB)
+	authRepo := repositories.NewUserRepository(config.DB)
 	authService := services.NewAuthService(authRepo, validate, logger)
 	authController := controllers.NewAuthController(authService, logger)
 	// Rantai Quiz
