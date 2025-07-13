@@ -5,3 +5,10 @@ type FilterQuizRequest struct {
 	Level   *uint  `json:"level" validate:"omitempty,min=0"`
 	Title   string `json:"title" validate:"omitempty,max=100"`
 }
+
+// DTO untuk request submit
+type SubmitAnswerRequest struct {
+	SessionID  string `json:"session_id" validate:"required"`
+	QuestionID uint   `json:"question_id" validate:"required"`
+	OptionID   uint   `json:"option_id" validate:"required"`
+}

@@ -24,9 +24,10 @@ type QuizSession struct {
 }
 
 type QuizServiceImpl struct {
-	Repo     repositories.QuizRepository
-	Validate *validator.Validate
-	Log      *slog.Logger
+	Validate       *validator.Validate
+	Log            *slog.Logger
+	QuizRepository repositories.QuizRepository
+	//UserProfileRepository repositories.UserProfileRepository
 
 	//untuk meyimpan sesi kuis yang aktif
 	sessions     map[string]*QuizSession
@@ -36,20 +37,20 @@ type QuizServiceImpl struct {
 // constructor
 func NewQuizService(repo repositories.QuizRepository, validate *validator.Validate, log *slog.Logger) QuizService {
 	return &QuizServiceImpl{
-		Repo:     repo,
-		Validate: validate,
-		Log:      log,
-		sessions: make(map[string]*QuizSession),
+		QuizRepository: repo,
+		Validate:       validate,
+		Log:            log,
+		sessions:       make(map[string]*QuizSession),
 	}
 }
 
 // mengambil semua quiz yang ada
 // menerima filter di untuk level, dialect, title
-func (s QuizServiceImpl) GetAllQuizzes(ctx context.Context, filters web.FilterQuizRequest) ([]web.QuizResponse, error) {
+func (s *QuizServiceImpl) GetAllQuizzes(ctx context.Context, filters web.FilterQuizRequest) ([]web.QuizResponse, error) {
 	s.Log.InfoContext(ctx, "get all quizzes process started", "dialect", filters.Dialect)
 
 	//panggil repository
-	quizzes, err := s.Repo.FindAllQuizzes(ctx, filters)
+	quizzes, err := s.QuizRepository.FindAllQuizzes(ctx, filters)
 	if err != nil {
 		s.Log.ErrorContext(ctx, "failed to find quizzes", "err", err)
 		return nil, err
@@ -72,11 +73,11 @@ func (s QuizServiceImpl) GetAllQuizzes(ctx context.Context, filters web.FilterQu
 }
 
 // untuk memulai sebuah sesi kuis
-func (s QuizServiceImpl) StartQuiz(ctx context.Context, quizID uint, userID string) (web.QuizQuestionResponse, error) {
+func (s *QuizServiceImpl) StartQuiz(ctx context.Context, quizID uint, userID string) (web.QuizQuestionResponse, error) {
 	s.Log.InfoContext(ctx, "start quiz", "quizID", quizID, "userID", userID)
 
 	//ambil semua ID question untuk kuis ini
-	questionIDs, err := s.Repo.FindQuestionIDsByQuizID(ctx, quizID)
+	questionIDs, err := s.QuizRepository.FindQuestionIDsByQuizID(ctx, quizID)
 	if err != nil {
 		s.Log.InfoContext(ctx, "failed to find questions IDs", "quizID", quizID, "userID", userID)
 		return web.QuizQuestionResponse{}, err
@@ -112,7 +113,7 @@ func (s QuizServiceImpl) StartQuiz(ctx context.Context, quizID uint, userID stri
 
 	//mengambil detail pertanyaan pertama
 	firstQuestionID := questionIDs[0]
-	question, err := s.Repo.FindQuestionWithOptions(ctx, firstQuestionID)
+	question, err := s.QuizRepository.FindQuestionWithOptions(ctx, firstQuestionID)
 	if err != nil {
 		s.Log.InfoContext(ctx, "failed to find question details/answers", "error", err, "questionID", firstQuestionID)
 		return web.QuizQuestionResponse{}, err
@@ -136,4 +137,8 @@ func (s QuizServiceImpl) StartQuiz(ctx context.Context, quizID uint, userID stri
 	}
 
 	return response, nil
+}
+
+func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAnswerRequest) (web.QuizQuestionResponse, error) {
+	panic("error")
 }

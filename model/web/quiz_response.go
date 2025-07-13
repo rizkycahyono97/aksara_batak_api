@@ -24,3 +24,17 @@ type QuizQuestionResponse struct {
 	QuestionText         string                   `json:"question_text"`
 	Options              []QuestionOptionResponse `json:"options"`
 }
+
+// DTO untuk response answer setelah menjawan satu soal
+type SubmitAnswerResponse struct {
+	IsCorrect       bool                    `json:"is_correct"`
+	CorrectOptionID uint                    `json:"correct_option_id"`
+	QuizFinished    bool                    `json:"quiz_finished"`
+	NextQuestion    *QuestionOptionResponse `json:"next_question,omitempty"`
+	FinalResult     *FinalResultResponse    `json:"final_result,omitempty"`
+}
+
+type FinalResultResponse struct {
+	FinalScore int `json:"final_score"`
+	XPEarned   int `json:"xp_earned"`
+}
