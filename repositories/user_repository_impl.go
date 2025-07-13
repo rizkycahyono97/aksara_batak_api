@@ -35,3 +35,7 @@ func (r *UserRepositoryImpl) FindUserByID(ctx context.Context, userID string) (*
 	}
 	return &users, nil
 }
+
+func (r *UserRepositoryImpl) UserUpdate(ctx context.Context, users *domain.Users) error {
+	return r.db.WithContext(ctx).Save(&users).Error
+}

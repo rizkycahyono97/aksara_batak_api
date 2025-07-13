@@ -74,6 +74,29 @@ func (s *UserProfileServiceImpl) FindUserProfileByID(ctx context.Context, userID
 }
 
 func (s *UserProfileServiceImpl) UpdateUserProfile(ctx context.Context, userID string, request web.UserProfileUpdateRequest) (*web.UserProfileResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	s.Log.InfoContext(ctx, "update user profile process started", "userID", userID)
+
+	//validation
+	if err := s.Validate.Struct(request); err != nil {
+		s.Log.WarnContext(ctx, "update profile request validation failed", "error", err)
+		return nil, err
+	}
+
+	//ambil data user yang di update
+	user, err := s.UserRepo.FindUserByID(ctx, userID)
+	if err != nil {
+		s.Log.ErrorContext(ctx, "failed to find user before update", "error", err)
+		return nil, errors.New("user not found")
+	}
+
+	user.Name = request.Name
+	user.AvatarURL = request.AvatarURL
+
+	if err := s.UserRepo.UserUpdate(ctx, user); err != nil {
+		s.Log.ErrorContext(ctx, "failed to update user in repository", "error", err)
+		return nil, err
+	}
+	s.Log.InfoContext(ctx, "user profile updated successfully", "userID", userID)
+
+	return nil, err
 }
