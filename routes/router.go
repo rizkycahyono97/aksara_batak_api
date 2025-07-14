@@ -28,6 +28,7 @@ func SetupRoutes(
 	// quiz
 	private.Get("/quizzes", quizController.GetAllQuizzes)
 	private.Get("/quizzes/:quizID/start", quizController.StartQuiz)
+	private.Post("/quizzes/submit", quizController.SubmitQuiz)
 
 	// userProfile
 	private.Get("/users/profile", userProfileController.GetMyProfile)

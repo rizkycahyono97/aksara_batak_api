@@ -164,8 +164,19 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 		return web.SubmitAnswerResponse{}, errors.New("invalid session ID")
 	}
 
+	//ambil id pertanyaan
+	if session.CurrentQuestionIndex >= len(session.QuestionIDs) {
+		return web.SubmitAnswerResponse{}, errors.New("quiz has already been completed")
+	}
+	currentQuestionID := session.QuestionIDs[session.CurrentQuestionIndex]
+
+	if currentQuestionID != request.QuestionID {
+		s.Log.WarnContext(ctx, "user answered the wrong question", "expected", currentQuestionID, "got", request.QuestionID)
+		return web.SubmitAnswerResponse{}, errors.New("mismatched question ID")
+	}
+
 	//validasi jawaban + menambah jumlah score
-	correctOptionID, err := s.QuizRepository.FindCorrectOptionID(ctx, request.OptionID)
+	correctOptionID, err := s.QuizRepository.FindCorrectOptionID(ctx, currentQuestionID)
 	if err != nil {
 		s.Log.ErrorContext(ctx, "failed to find correct option ID", "optionID", request.OptionID)
 		return web.SubmitAnswerResponse{}, err
