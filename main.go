@@ -36,14 +36,14 @@ func main() {
 	authRepo := repositories.NewUserRepository(config.DB)
 	authService := services.NewAuthService(authRepo, validate, logger)
 	authController := controllers.NewAuthController(authService, logger)
-	// Rantai Quiz
-	quizRepo := repositories.NewQuizRepository(config.DB)
-	quizService := services.NewQuizService(quizRepo, validate, logger)
-	quizController := controllers.NewQuizController(quizService, logger)
 	// user Profile
 	userProfileRepo := repositories.NewUserProfileRepository(config.DB)
 	userProfileService := services.NewUserProfileService(authRepo, userProfileRepo, validate, logger)
 	userProfileController := controllers.NewUserProfileController(userProfileService, logger)
+	// Rantai Quiz
+	quizRepo := repositories.NewQuizRepository(config.DB)
+	quizService := services.NewQuizService(quizRepo, validate, logger, userProfileRepo)
+	quizController := controllers.NewQuizController(quizService, logger)
 
 	//initialize fiber
 	app := fiber.New()

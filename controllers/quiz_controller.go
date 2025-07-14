@@ -203,3 +203,50 @@ func (c *QuizController) StartQuiz(f *fiber.Ctx) error {
 		Data:    response,
 	})
 }
+
+func (c *QuizController) SubmitQuiz(f *fiber.Ctx) error {
+	c.Log.InfoContext(f.Context(), "submit answer process started")
+
+	//parsing request ke DTO
+	var request web.SubmitAnswerRequest
+	if err := f.BodyParser(&request); err != nil {
+		c.Log.ErrorContext(f.Context(), "failed to parse request body for submit answer", "error", err)
+		return f.Status(fiber.StatusBadRequest).JSON(web.ApiResponse{
+			Code:    "400",
+			Message: "BAD REQUEST",
+		})
+	}
+
+	//service
+	response, err := c.QuizService.SubmitAnswer(f.Context(), request)
+	if err != nil {
+		var validationError *validator.ValidationErrors
+		if errors.As(err, &validationError) {
+			c.Log.ErrorContext(f.Context(), "Validation Error")
+			return f.Status(fiber.StatusBadRequest).JSON(web.ApiResponse{
+				Code:    "400",
+				Message: "BAD REQUEST",
+			})
+		}
+
+		if err.Error() == "invalid session ID" {
+			c.Log.WarnContext(f.Context(), "submit answer with invalid session", "sessionID", request.SessionID)
+			return f.Status(fiber.StatusNotFound).JSON(web.ApiResponse{
+				Code:    "404",
+				Message: "Quiz session not found or has expired.",
+			})
+		}
+
+		c.Log.ErrorContext(f.Context(), "internal server error on submit answer", "error", err)
+		return f.Status(fiber.StatusInternalServerError).JSON(web.ApiResponse{
+			Code:    "500",
+			Message: "INTERNAL SERVER ERROR",
+		})
+	}
+
+	return f.Status(fiber.StatusOK).JSON(web.ApiResponse{
+		Code:    "200",
+		Message: "Quiz Submit Successfully",
+		Data:    response,
+	})
+}
