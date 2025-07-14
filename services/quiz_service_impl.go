@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/rizkycahyono97/aksara_batak_api/model/domain"
 	"github.com/rizkycahyono97/aksara_batak_api/model/web"
 	"github.com/rizkycahyono97/aksara_batak_api/repositories"
 	"log/slog"
@@ -24,10 +25,10 @@ type QuizSession struct {
 }
 
 type QuizServiceImpl struct {
-	Validate       *validator.Validate
-	Log            *slog.Logger
-	QuizRepository repositories.QuizRepository
-	//UserProfileRepository repositories.UserProfileRepository
+	Validate              *validator.Validate
+	Log                   *slog.Logger
+	QuizRepository        repositories.QuizRepository
+	UserProfileRepository repositories.UserProfileRepository
 
 	//untuk meyimpan sesi kuis yang aktif
 	sessions     map[string]*QuizSession
@@ -35,12 +36,18 @@ type QuizServiceImpl struct {
 }
 
 // constructor
-func NewQuizService(repo repositories.QuizRepository, validate *validator.Validate, log *slog.Logger) QuizService {
+func NewQuizService(
+	quizRepository repositories.QuizRepository,
+	validate *validator.Validate,
+	log *slog.Logger,
+	userProfileRepository repositories.UserProfileRepository,
+) QuizService {
 	return &QuizServiceImpl{
-		QuizRepository: repo,
-		Validate:       validate,
-		Log:            log,
-		sessions:       make(map[string]*QuizSession),
+		QuizRepository:        quizRepository,
+		UserProfileRepository: userProfileRepository,
+		Validate:              validate,
+		Log:                   log,
+		sessions:              make(map[string]*QuizSession),
 	}
 }
 
@@ -139,6 +146,124 @@ func (s *QuizServiceImpl) StartQuiz(ctx context.Context, quizID uint, userID str
 	return response, nil
 }
 
-func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAnswerRequest) (web.QuizQuestionResponse, error) {
-	panic("error")
+func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAnswerRequest) (web.SubmitAnswerResponse, error) {
+	s.Log.InfoContext(ctx, "submit answer process started", "sessionID", request.SessionID)
+
+	//validasi DTO
+	if err := s.Validate.Struct(request); err != nil {
+		s.Log.ErrorContext(ctx, "validation error", "error", err, "request", request)
+		return web.SubmitAnswerResponse{}, err
+	}
+
+	//ambil sesi kuis yang aktif
+	s.sessionMutex.RLock()
+	session, ok := s.sessions[request.SessionID]
+	s.sessionMutex.RUnlock()
+	if !ok {
+		s.Log.InfoContext(ctx, "session does not exist", "sessionID", request.SessionID)
+		return web.SubmitAnswerResponse{}, errors.New("invalid session ID")
+	}
+
+	//validasi jawaban + menambah jumlah score
+	correctOptionID, err := s.QuizRepository.FindCorrectOptionID(ctx, request.OptionID)
+	if err != nil {
+		s.Log.ErrorContext(ctx, "failed to find correct option ID", "optionID", request.OptionID)
+		return web.SubmitAnswerResponse{}, err
+	}
+	isCorrect := request.OptionID == correctOptionID
+	if isCorrect {
+		s.Log.InfoContext(ctx, "option ID is match", "optionID", request.OptionID)
+		session.CurrentScore += 10
+	}
+	session.CurrentQuestionIndex++
+
+	//response dasar
+	response := web.SubmitAnswerResponse{
+		IsCorrect:       isCorrect,
+		CorrectOptionID: correctOptionID,
+	}
+
+	//cek kuis jika sudah selesai
+	if session.CurrentQuestionIndex >= len(session.QuestionIDs) {
+		response.QuizFinished = true
+		xpEarned := session.CurrentScore // 1 skor 1 xp
+		response.FinalResult = &web.FinalResultResponse{
+			FinalScore: xpEarned,
+			XPEarned:   xpEarned,
+		}
+
+		//goroutine agar tidak memblokir response
+		go func() {
+			//membuat context baru agar tidak terpengaruh oleh timout request
+			bgCtx := context.Background()
+
+			//assign struct kuis session ke quizAttempt
+			attempt := &domain.QuizAttempts{UserID: session.UserID, QuizID: session.QuizID, Score: uint(session.CurrentScore)}
+			if err := s.QuizRepository.CreateQuizAttempt(bgCtx, attempt); err != nil {
+				s.Log.ErrorContext(bgCtx, "failed to create quiz attempt", "error", err)
+			}
+
+			//======================
+			//menambah streak dan XP
+			//======================
+			// ambil userID
+			profile, err := s.UserProfileRepository.FindUserProfileByID(ctx, attempt.UserID)
+			if err != nil {
+				s.Log.ErrorContext(bgCtx, "failed to find user profile for update", "error", err, "userID", session.UserID)
+				return
+			}
+
+			//hitung streak
+			var newStreak uint
+			today := time.Now()
+			yesterday := today.AddDate(0, 0, -1)
+
+			if profile.LastActiveAt.Year() == yesterday.Year() && profile.LastActiveAt.YearDay() == yesterday.YearDay() {
+				newStreak = profile.CurrentStreak + 1
+			} else if profile.LastActiveAt.Year() == today.Year() || profile.LastActiveAt.YearDay() != today.YearDay() {
+				newStreak = 1
+			} else {
+				newStreak = profile.CurrentStreak
+			}
+
+			//repository untuk update streak dan xp
+			if err := s.UserProfileRepository.UpdateXPAndStreak(bgCtx, session.UserID, xpEarned, newStreak, today); err != nil {
+				s.Log.ErrorContext(bgCtx, "failed to update user xp and streak", "error", err, "userID", session.UserID)
+			}
+			s.Log.InfoContext(bgCtx, "user profile updated after quiz", "userID", session.UserID, "xp_earned", xpEarned, "new_streak", newStreak)
+		}()
+
+		//hapus session dari memory
+		s.sessionMutex.Lock()
+		delete(s.sessions, request.SessionID)
+		s.sessionMutex.Unlock()
+	} else {
+		//untuk melanjutkan kuis selanjutnya
+		response.QuizFinished = true
+		nextQuestionID := session.QuestionIDs[session.CurrentQuestionIndex]
+
+		question, err := s.QuizRepository.FindQuestionWithOptions(ctx, nextQuestionID)
+		if err != nil {
+			return web.SubmitAnswerResponse{}, err
+		}
+
+		//DTO
+		var options []web.QuestionOptionResponse
+		for _, opt := range question.QuestionOptions {
+			options = append(options, web.QuestionOptionResponse{
+				ID:   opt.ID,
+				Text: opt.OptionText,
+			})
+		}
+
+		response.NextQuestion = &web.QuizQuestionResponse{
+			SessionID:            request.SessionID,
+			TotalQuestions:       len(session.QuestionIDs),
+			CurrentQuestionIndex: session.CurrentQuestionIndex + 1,
+			QuestionText:         question.QuestionText,
+			Options:              options,
+		}
+	}
+
+	return response, nil
 }

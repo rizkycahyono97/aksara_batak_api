@@ -27,11 +27,11 @@ type QuizQuestionResponse struct {
 
 // DTO untuk response answer setelah menjawan satu soal
 type SubmitAnswerResponse struct {
-	IsCorrect       bool                    `json:"is_correct"`
-	CorrectOptionID uint                    `json:"correct_option_id"`
-	QuizFinished    bool                    `json:"quiz_finished"`
-	NextQuestion    *QuestionOptionResponse `json:"next_question,omitempty"`
-	FinalResult     *FinalResultResponse    `json:"final_result,omitempty"`
+	IsCorrect       bool                  `json:"is_correct"`
+	CorrectOptionID uint                  `json:"correct_option_id"`
+	QuizFinished    bool                  `json:"quiz_finished"`
+	NextQuestion    *QuizQuestionResponse `json:"next_question,omitempty"`
+	FinalResult     *FinalResultResponse  `json:"final_result,omitempty"`
 }
 
 type FinalResultResponse struct {
