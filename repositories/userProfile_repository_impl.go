@@ -31,6 +31,7 @@ func (u UserProfileRepositoryImpl) UserProfileUpdate(ctx context.Context, profil
 // gorm Updates -> untuk memperbarui banyak kolom sekaligus
 func (u UserProfileRepositoryImpl) UpdateXPAndStreak(ctx context.Context, userID string, xpToAdd int, newStreak uint, lastActive time.Time) error {
 	err := u.db.WithContext(ctx).
+		Model(&domain.UserProfiles{}).
 		Where("user_id = ?", userID).
 		Updates(map[string]interface{}{
 			"total_xp":       gorm.Expr("total_xp + ?", xpToAdd),

@@ -19,6 +19,7 @@ type QuestionOptionResponse struct {
 // atau saat pertanyaan berikutnya ditampilkan
 type QuizQuestionResponse struct {
 	SessionID            string                   `json:"session_id"`
+	QuestionID           uint                     `json:"question_id"`
 	TotalQuestions       int                      `json:"total_questions"`
 	CurrentQuestionIndex int                      `json:"current_question_index"`
 	QuestionText         string                   `json:"question_text"`

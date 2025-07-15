@@ -48,7 +48,7 @@ func (r *QuizRepositoryImpl) FindQuestionIDsByQuizID(ctx context.Context, quizID
 	//untuk hasil pertanyaan
 	var questionsIDs []uint
 
-	//query ke table questions, filter berdasarkan quiz_id
+	//query ke table questions, filter berdasarkan quiz_id, hanya id question bukan isinya
 	// pluck -> SELECT id FROM questions WHERE quiz_id = {quizID};
 	err := r.db.WithContext(ctx).
 		Model(domain.Questions{}).
@@ -66,7 +66,7 @@ func (r *QuizRepositoryImpl) FindQuestionIDsByQuizID(ctx context.Context, quizID
 func (r *QuizRepositoryImpl) FindQuestionWithOptions(ctx context.Context, questionID uint) (domain.Questions, error) {
 	var question domain.Questions
 
-	//query -> melakukan preload ke QuestionOptions untuk mengambil semua jawaban dalam 1 jawaban
+	//query -> melakukan preload ke QuestionOptions untuk mengambil semua jawaban dalam 1 question
 	// SELECT * FROM questions WHERE questionsID
 	err := r.db.WithContext(ctx).
 		Preload("QuestionOptions").
