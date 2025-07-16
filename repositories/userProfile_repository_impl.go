@@ -40,3 +40,25 @@ func (u UserProfileRepositoryImpl) UpdateXPAndStreak(ctx context.Context, userID
 		}).Error
 	return err
 }
+
+// method untuk mencari xp tertinggi untuk setiap user
+func (u UserProfileRepositoryImpl) GetTopUsers(ctx context.Context, limit int) ([]domain.UserProfiles, error) {
+	var userProfiles []domain.UserProfiles
+
+	// - Model: Menentukan tabel utama adalah user_profiles.
+	// - Select: Memilih kolom yang kita butuhkan dari kedua tabel.
+	// - Joins: Menggabungkan dengan tabel users berdasarkan user_id dan uuid.
+	// - Order: Mengurutkan berdasarkan total_xp secara menurun.
+	// - Limit: Membatasi jumlah hasil.
+	// - Scan: Memasukkan hasil query ke dalam slice 'results'.
+	err := u.db.WithContext(ctx).
+		Model(&domain.UserProfiles{}).
+		Select("users.uuid, users.name, users.avatar_url, user_profiles.total_xp").
+		Joins("JOIN users ON users.id = user_profiles.user_id").
+		Limit(limit).
+		Scan(&userProfiles).Error
+	if err != nil {
+		return nil, err
+	}
+	return userProfiles, nil
+}
