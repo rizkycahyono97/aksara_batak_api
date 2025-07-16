@@ -8,4 +8,5 @@ import (
 type UserProfileService interface {
 	FindUserProfileByID(ctx context.Context, userID string) (web.UserProfileResponse, error)
 	UpdateUserProfile(ctx context.Context, userID string, request web.UserProfileUpdateRequest) (*web.UserProfileResponse, error)
+	GetMyAttempts(ctx context.Context, userID string) ([]web.QuizAttemptsResponse, error)
 }

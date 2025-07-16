@@ -11,23 +11,26 @@ import (
 )
 
 type UserProfileServiceImpl struct {
-	UserRepo        repositories.UserRepository
-	UserProfileRepo repositories.UserProfileRepository
-	Validate        *validator.Validate
-	Log             *slog.Logger
+	UserRepo         repositories.UserRepository
+	UserProfileRepo  repositories.UserProfileRepository
+	QuizAttemptsRepo repositories.QuizAttemptRepository
+	Validate         *validator.Validate
+	Log              *slog.Logger
 }
 
 func NewUserProfileService(
 	userRepo repositories.UserRepository,
 	userProfileRepo repositories.UserProfileRepository,
+	quizAttemptsRepo repositories.QuizAttemptRepository,
 	validate *validator.Validate,
 	log *slog.Logger,
 ) UserProfileService {
 	return &UserProfileServiceImpl{
-		UserRepo:        userRepo,
-		UserProfileRepo: userProfileRepo,
-		Validate:        validate,
-		Log:             log,
+		UserRepo:         userRepo,
+		UserProfileRepo:  userProfileRepo,
+		QuizAttemptsRepo: quizAttemptsRepo,
+		Validate:         validate,
+		Log:              log,
 	}
 }
 
@@ -99,4 +102,31 @@ func (s *UserProfileServiceImpl) UpdateUserProfile(ctx context.Context, userID s
 	s.Log.InfoContext(ctx, "user profile updated successfully", "userID", userID)
 
 	return nil, err
+}
+
+func (s *UserProfileServiceImpl) GetMyAttempts(ctx context.Context, userID string) ([]web.QuizAttemptsResponse, error) {
+	s.Log.InfoContext(ctx, "get user quiz attempts process started", "userID", userID)
+
+	//repository
+	attempts, err := s.QuizAttemptsRepo.FindAllQuizAttemptByUserID(ctx, userID)
+	if err != nil {
+		s.Log.ErrorContext(ctx, "failed to find quiz attempts from repository", "error", err, "userID", userID)
+		return nil, err
+	}
+
+	// assign ke DTO
+	var attemptsResponse []web.QuizAttemptsResponse
+	for _, quizAttempt := range attempts {
+		response := web.QuizAttemptsResponse{
+			AttemptID:   quizAttempt.ID,
+			QuizID:      quizAttempt.QuizID,
+			QuizTitle:   quizAttempt.Quizzes.Title,
+			Score:       quizAttempt.Score,
+			CompletedAt: quizAttempt.CompletedAt,
+		}
+		attemptsResponse = append(attemptsResponse, response)
+	}
+
+	s.Log.InfoContext(ctx, "successfully retrieved user quiz attempts", "userID", userID, "count", len(attemptsResponse))
+	return attemptsResponse, nil
 }
