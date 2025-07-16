@@ -3,7 +3,11 @@ package domain
 type Questions struct {
 	ID           uint   `json:"id" gorm:"primaryKey;unsigned; not null;autoIncrement"`
 	QuizID       uint   `json:"quiz_id" gorm:"not null"`
+	QuestionType string `json:"question_type" gorm:"type:enum('multiple_choice', 'image_choice', 'listen_and_type', 'drawing') default 'multiple_choice';not null"`
 	QuestionText string `json:"question_text" gorm:"type:text;not null"`
+	ImageURL     string `json:"image_url" gorm:"type:varchar(255);null"`
+	AudioURL     string `json:"audio_url" gorm:"type:varchar(255);null"`
+	LottieURL    string `json:"lottie_url" gorm:"type:varchar(255);null"`
 
 	//1:M BelongsTo quizzes
 	Quizzes Quizzes `json:"quizzes" gorm:"foreignKey:quiz_id"`

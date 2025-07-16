@@ -11,8 +11,11 @@ type QuizResponse struct {
 // DTO untuk satu pilihan jawaban
 // tidak ada is_correct untuk keamanan
 type QuestionOptionResponse struct {
-	ID   uint   `json:"id"`
-	Text string `json:"text"`
+	ID         uint   `json:"id"`
+	OptionText string `json:"option_text"`
+	AksaraText string `json:"aksara_text"`
+	ImageURL   string `json:"image_url"`
+	AudioURL   string `json:"audio_url"`
 }
 
 // DTO yang dikirim saat kuis dimulai
@@ -22,7 +25,11 @@ type QuizQuestionResponse struct {
 	QuestionID           uint                     `json:"question_id"`
 	TotalQuestions       int                      `json:"total_questions"`
 	CurrentQuestionIndex int                      `json:"current_question_index"`
+	QuestionType         string                   `json:"question_type"`
 	QuestionText         string                   `json:"question_text"`
+	ImageURL             string                   `json:"image_url"`
+	AudioURL             string                   `json:"audio_url"`
+	LottieURL            string                   `json:"lottie_url"`
 	Options              []QuestionOptionResponse `json:"options"`
 }
 

@@ -45,8 +45,9 @@ func main() {
 	quizService := services.NewQuizService(quizRepo, validate, logger, userProfileRepo)
 	quizController := controllers.NewQuizController(quizService, logger)
 
-	//initialize fiber
+	//initialize fiber,routes,static
 	app := fiber.New()
+	app.Static("/assets", "./public")
 	routes.SetupRoutes(app, authController, quizController, userProfileController)
 
 	//gracefull shutdown

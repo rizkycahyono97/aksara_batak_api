@@ -130,8 +130,11 @@ func (s *QuizServiceImpl) StartQuiz(ctx context.Context, quizID uint, userID str
 	var options []web.QuestionOptionResponse
 	for _, opt := range question.QuestionOptions {
 		options = append(options, web.QuestionOptionResponse{
-			ID:   opt.ID,
-			Text: opt.OptionText,
+			ID:         opt.ID,
+			OptionText: opt.OptionText,
+			AksaraText: opt.AksaraText,
+			ImageURL:   opt.ImageURL,
+			AudioURL:   opt.AudioURL,
 		})
 	}
 
@@ -141,7 +144,11 @@ func (s *QuizServiceImpl) StartQuiz(ctx context.Context, quizID uint, userID str
 		QuestionID:           question.ID,
 		TotalQuestions:       len(questionIDs),
 		CurrentQuestionIndex: 1,
+		QuestionType:         question.QuestionType,
 		QuestionText:         question.QuestionText,
+		ImageURL:             question.ImageURL,
+		AudioURL:             question.AudioURL,
+		LottieURL:            question.LottieURL,
 		Options:              options,
 	}
 
@@ -265,8 +272,11 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 		var options []web.QuestionOptionResponse
 		for _, opt := range question.QuestionOptions {
 			options = append(options, web.QuestionOptionResponse{
-				ID:   opt.ID,
-				Text: opt.OptionText,
+				ID:         opt.ID,
+				OptionText: opt.OptionText,
+				AksaraText: opt.AksaraText,
+				ImageURL:   opt.ImageURL,
+				AudioURL:   opt.AudioURL,
 			})
 		}
 
@@ -275,7 +285,11 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 			QuestionID:           question.ID,
 			TotalQuestions:       len(session.QuestionIDs),
 			CurrentQuestionIndex: session.CurrentQuestionIndex + 1,
+			QuestionType:         question.QuestionType,
 			QuestionText:         question.QuestionText,
+			ImageURL:             question.ImageURL,
+			AudioURL:             question.AudioURL,
+			LottieURL:            question.LottieURL,
 			Options:              options,
 		}
 	}
