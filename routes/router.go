@@ -11,6 +11,7 @@ func SetupRoutes(
 	authController *controllers.AuthController,
 	quizController *controllers.QuizController,
 	userProfileController *controllers.UserProfileController,
+	leaderboardController *controllers.LeaderboardController,
 ) {
 	//intance middleware
 	jwtMiddleware := middleware.JWTMiddleware()
@@ -19,6 +20,9 @@ func SetupRoutes(
 	publik := app.Group("/api/v1")
 	publik.Post("/login", authController.Login)
 	publik.Post("/register", authController.Register)
+
+	//leaderboard
+	publik.Get("/leaderboard", leaderboardController.GetLeaderboards)
 
 	//=============
 	//private route

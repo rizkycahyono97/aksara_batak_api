@@ -46,11 +46,14 @@ func main() {
 	quizRepo := repositories.NewQuizRepository(config.DB)
 	quizService := services.NewQuizService(quizRepo, validate, logger, userProfileRepo)
 	quizController := controllers.NewQuizController(quizService, logger)
+	//leaderboard
+	leaderboardService := services.NewLeaderboardService(userProfileRepo, logger)
+	leaderboardController := controllers.NewLeaderboardController(leaderboardService, logger)
 
 	//initialize fiber,routes,static
 	app := fiber.New()
 	app.Static("/assets", "./public")
-	routes.SetupRoutes(app, authController, quizController, userProfileController)
+	routes.SetupRoutes(app, authController, quizController, userProfileController, leaderboardController)
 
 	//gracefull shutdown
 	quit := make(chan os.Signal, 1)

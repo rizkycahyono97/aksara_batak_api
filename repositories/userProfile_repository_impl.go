@@ -55,7 +55,8 @@ func (u UserProfileRepositoryImpl) GetTopUsers(ctx context.Context, limit int) (
 		Model(&domain.UserProfiles{}).
 		Select("users.uuid, users.name, users.avatar_url, user_profiles.total_xp").
 		Joins("JOIN users ON users.uuid = user_profiles.user_id").
-		Order("user_profiles.total_xp").
+		Where("users.role != ?", "admin"). //jika role admin, jangan tampilkan
+		Order("user_profiles.total_xp DESC").
 		Limit(limit).
 		Scan(&results).Error
 	if err != nil {

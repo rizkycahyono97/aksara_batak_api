@@ -36,7 +36,7 @@ func (s LeaderboardServiceImpl) GetLeaderboards(ctx context.Context, limit int) 
 			Rank:      i + 1,
 			UserID:    user.UUID,
 			Name:      user.Name,
-			AvatarURL: user.Name,
+			AvatarURL: user.AvatarURL,
 			TotalXP:   int(user.TotalXP),
 		}
 		leaderboardsResponse = append(leaderboardsResponse, response)
