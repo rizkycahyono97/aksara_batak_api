@@ -112,3 +112,29 @@ func (c *UserProfileController) UpdateMyProfile(f *fiber.Ctx) error {
 		Data:    updatedProfile,
 	})
 }
+
+func (c *UserProfileController) GetMyAttempts(f *fiber.Ctx) error {
+	//ambil uuid di jwt
+	userToken := f.Locals("user").(*jwt.Token)
+	claims := userToken.Claims.(jwt.MapClaims)
+	userID := claims["uuid"].(string)
+	c.Log.InfoContext(f.Context(), "get user quiz attempts process started", "userID", userID)
+
+	//service
+	attempts, err := c.UserProfileService.GetMyAttempts(f.UserContext(), userID)
+	if err != nil {
+		c.Log.ErrorContext(f.Context(), "internal server error on get attempts", "error", err, "userID", userID)
+		return f.Status(fiber.StatusInternalServerError).JSON(web.ApiResponse{
+			Code:    "500",
+			Message: "internal server error on get attempts",
+			Data:    nil,
+		})
+	}
+
+	c.Log.InfoContext(f.Context(), "successfully retrieved user quiz attempts", "userID", userID, "count", len(attempts))
+	return f.Status(fiber.StatusOK).JSON(web.ApiResponse{
+		Code:    "200",
+		Message: "successfully retrieved user quiz attempts",
+		Data:    attempts,
+	})
+}

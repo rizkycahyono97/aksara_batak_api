@@ -36,9 +36,11 @@ func main() {
 	authRepo := repositories.NewUserRepository(config.DB)
 	authService := services.NewAuthService(authRepo, validate, logger)
 	authController := controllers.NewAuthController(authService, logger)
+	//quiz attempts
+	quizAttemptRepo := repositories.NewQuizAttemptRepository(config.DB)
 	// user Profile
 	userProfileRepo := repositories.NewUserProfileRepository(config.DB)
-	userProfileService := services.NewUserProfileService(authRepo, userProfileRepo, validate, logger)
+	userProfileService := services.NewUserProfileService(authRepo, userProfileRepo, quizAttemptRepo, validate, logger)
 	userProfileController := controllers.NewUserProfileController(userProfileService, logger)
 	// Rantai Quiz
 	quizRepo := repositories.NewQuizRepository(config.DB)

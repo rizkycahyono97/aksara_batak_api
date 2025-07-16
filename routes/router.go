@@ -33,4 +33,5 @@ func SetupRoutes(
 	// userProfile
 	private.Get("/users/profile", userProfileController.GetMyProfile)
 	private.Put("/users/profile", userProfileController.UpdateMyProfile)
+	private.Get("/users/profile/attempts", userProfileController.GetMyAttempts)
 }

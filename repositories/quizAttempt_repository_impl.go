@@ -10,7 +10,7 @@ type QuizAttemptRepositoryImpl struct {
 	DB *gorm.DB
 }
 
-func NewQuizAttemptRepositoryImpl(db *gorm.DB) QuizAttemptRepository {
+func NewQuizAttemptRepository(db *gorm.DB) QuizAttemptRepository {
 	return QuizAttemptRepositoryImpl{DB: db}
 }
 
