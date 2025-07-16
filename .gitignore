@@ -13,3 +13,6 @@ api-contact-form
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# public
+public/
