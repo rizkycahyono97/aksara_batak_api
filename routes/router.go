@@ -16,7 +16,9 @@ func SetupRoutes(
 	//intance middleware
 	jwtMiddleware := middleware.JWTMiddleware()
 
-	//group
+	//=============
+	//public route
+	//=============
 	publik := app.Group("/api/v1")
 	publik.Post("/login", authController.Login)
 	publik.Post("/register", authController.Register)
@@ -33,6 +35,7 @@ func SetupRoutes(
 	private.Get("/quizzes", quizController.GetAllQuizzes)
 	private.Get("/quizzes/:quizID/start", quizController.StartQuiz)
 	private.Post("/quizzes/submit", quizController.SubmitQuiz)
+	private.Post("/quizzes/submit-drawing", quizController.SubmitDrawingAnswer)
 
 	// userProfile
 	private.Get("/users/profile", userProfileController.GetMyProfile)

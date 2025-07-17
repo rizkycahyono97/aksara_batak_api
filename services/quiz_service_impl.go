@@ -296,3 +296,125 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 
 	return response, nil
 }
+
+// method khusus untuk submit jika question_type == "drawing"
+func (s *QuizServiceImpl) SubmitDrawingAnswer(ctx context.Context, request web.SubmitDrawingRequest) (web.SubmitAnswerResponse, error) {
+	s.Log.InfoContext(ctx, "submit drawing answer process started", "sessionID", request.SessionID)
+
+	//validasi request
+	if err := s.Validate.Struct(request); err != nil {
+		s.Log.ErrorContext(ctx, "validation error for drawing submission", "error", err)
+		return web.SubmitAnswerResponse{}, err
+	}
+
+	//ambil sesi kuis yang aktif dari struct session
+	s.sessionMutex.Lock()
+	session, ok := s.sessions[request.SessionID]
+	s.sessionMutex.Unlock()
+	if !ok {
+		s.Log.WarnContext(ctx, "session does not exist for drawing submission", "sessionID", request.SessionID)
+		return web.SubmitAnswerResponse{}, errors.New("invalid session ID")
+	}
+
+	//tambahkan score
+	session.CurrentScore += request.Score
+	session.CurrentQuestionIndex++
+	s.Log.InfoContext(ctx, "drawing score submitted and accepted", "sessionID", request.SessionID, "score_added", request.Score)
+
+	//response dasar
+	response := web.SubmitAnswerResponse{
+		IsCorrect:       request.Score > 0,
+		CorrectOptionID: 0,
+	}
+
+	//cek apakah question selesai atau lanjut
+	if session.CurrentQuestionIndex >= len(session.QuestionIDs) {
+		response.QuizFinished = true
+		xpEarned := session.CurrentScore // 1 skor 1 xp
+		response.FinalResult = &web.FinalResultResponse{
+			FinalScore: xpEarned,
+			XPEarned:   xpEarned,
+		}
+
+		//goroutine agar tidak memblokir response, dan kirim ke response
+		go func() {
+			//membuat context baru agar tidak terpengaruh oleh timout request
+			bgCtx := context.Background()
+
+			//assign struct kuis session ke quizAttempt
+			attempt := &domain.QuizAttempts{UserID: session.UserID, QuizID: session.QuizID, Score: uint(session.CurrentScore)}
+			if err := s.QuizRepository.CreateQuizAttempt(bgCtx, attempt); err != nil {
+				s.Log.ErrorContext(bgCtx, "failed to create quiz attempt", "error", err)
+			}
+
+			//======================
+			//menambah streak dan XP
+			//======================
+			// ambil userID
+			profile, err := s.UserProfileRepository.FindUserProfileByID(ctx, attempt.UserID)
+			if err != nil {
+				s.Log.ErrorContext(bgCtx, "failed to find user profile for update", "error", err, "userID", session.UserID)
+				return
+			}
+
+			//hitung streak
+			var newStreak uint
+			today := time.Now()
+			yesterday := today.AddDate(0, 0, -1)
+
+			if profile.LastActiveAt.Year() == yesterday.Year() && profile.LastActiveAt.YearDay() == yesterday.YearDay() { //jika kemarin aktif streak ditambah 1
+				newStreak = profile.CurrentStreak + 1
+			} else if profile.LastActiveAt.Year() == today.Year() || profile.LastActiveAt.YearDay() != today.YearDay() { //jika hari doang streak reset ke 1
+				newStreak = 1
+			} else {
+				newStreak = profile.CurrentStreak // selain itu streak samakan dengan currentStreak
+			}
+
+			//repository untuk update streak dan xp
+			if err := s.UserProfileRepository.UpdateXPAndStreak(bgCtx, session.UserID, xpEarned, newStreak, today); err != nil {
+				s.Log.ErrorContext(bgCtx, "failed to update user xp and streak", "error", err, "userID", session.UserID)
+			}
+			s.Log.InfoContext(bgCtx, "user profile updated after quiz", "userID", session.UserID, "xp_earned", xpEarned, "new_streak", newStreak)
+		}()
+
+		//hapus session dari memory
+		s.sessionMutex.Lock()
+		delete(s.sessions, request.SessionID)
+		s.sessionMutex.Unlock()
+	} else {
+		response.QuizFinished = false
+		nextQuestionID := session.QuestionIDs[session.CurrentQuestionIndex]
+
+		question, err := s.QuizRepository.FindQuestionWithOptions(ctx, nextQuestionID)
+		if err != nil {
+			return web.SubmitAnswerResponse{}, err
+		}
+
+		//DTO
+		var options []web.QuestionOptionResponse
+		for _, opt := range question.QuestionOptions {
+			options = append(options, web.QuestionOptionResponse{
+				ID:         opt.ID,
+				OptionText: opt.OptionText,
+				AksaraText: opt.AksaraText,
+				ImageURL:   opt.ImageURL,
+				AudioURL:   opt.AudioURL,
+			})
+		}
+
+		response.NextQuestion = &web.QuizQuestionResponse{
+			SessionID:            request.SessionID,
+			QuestionID:           question.ID,
+			TotalQuestions:       len(session.QuestionIDs),
+			CurrentQuestionIndex: session.CurrentQuestionIndex + 1,
+			QuestionType:         question.QuestionType,
+			QuestionText:         question.QuestionText,
+			ImageURL:             question.ImageURL,
+			AudioURL:             question.AudioURL,
+			LottieURL:            question.LottieURL,
+			Options:              options,
+		}
+	}
+
+	return response, nil
+}

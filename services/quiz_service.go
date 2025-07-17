@@ -10,4 +10,5 @@ type QuizService interface {
 	StartQuiz(ctx context.Context, quizID uint, userID string) (web.QuizQuestionResponse, error)
 	SubmitAnswer(ctx context.Context, request web.SubmitAnswerRequest) (web.SubmitAnswerResponse, error)
 	//GetQuizAttemptResult(ctx context.Context, attemptID uint) (web.QuizAttemptResponse, error)
+	SubmitDrawingAnswer(ctx context.Context, request web.SubmitDrawingRequest) (web.SubmitAnswerResponse, error)
 }
