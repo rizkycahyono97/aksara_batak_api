@@ -1,0 +1,466 @@
+openapi: 3.0.3
+info:
+  title: API Kuis Aksara Batak
+  description: |-
+    Dokumentasi API untuk aplikasi pembelajaran Aksara Batak.
+    API ini menangani otentikasi pengguna, alur kuis interaktif, dan papan peringkat.
+  version: 1.0.0
+servers:
+- url: /api/v1
+  description: Base URL untuk semua endpoint API
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Masukkan token JWT dengan format 'Bearer {token}'"
+  schemas:
+    RegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Budi Situmorang
+        email:
+          type: string
+          format: email
+          example: budi@mail.com
+        password:
+          type: string
+          format: password
+          example: password123
+      required:
+      - name
+      - email
+      - password
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: budi@mail.com
+        password:
+          type: string
+          format: password
+          example: password123
+      required:
+      - email
+      - password
+    SubmitAnswerRequest:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        question_id:
+          type: integer
+        option_id:
+          type: integer
+      required:
+      - session_id
+      - question_id
+      - option_id
+    SubmitDrawingRequest:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        question_id:
+          type: integer
+        score:
+          type: integer
+          description: Skor yang dihitung oleh frontend (0-100).
+      required:
+      - session_id
+      - question_id
+      - score
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Budi S.
+        avatar_url:
+          type: string
+          format: uri
+          example: https://example.com/avatar.png
+      required:
+      - name
+    UserResponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum:
+          - user
+          - admin
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+    QuizResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        level:
+          type: integer
+        dialect:
+          type: string
+          enum:
+          - toba
+          - karo
+    QuizQuestionResponse:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        question_id:
+          type: integer
+        total_questions:
+          type: integer
+        current_question_index:
+          type: integer
+        question_type:
+          type: string
+        question_text:
+          type: string
+        image_url:
+          type: string
+        audio_url:
+          type: string
+        lottie_url:
+          type: string
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              option_text:
+                type: string
+              aksara_text:
+                type: string
+              image_url:
+                type: string
+              audio_url:
+                type: string
+    SubmitAnswerResponse:
+      type: object
+      properties:
+        is_correct:
+          type: boolean
+        correct_option_id:
+          type: integer
+        quiz_finished:
+          type: boolean
+        next_question:
+          $ref: "#/components/schemas/QuizQuestionResponse"
+        final_result:
+          type: object
+          properties:
+            final_score:
+              type: integer
+            xp_earned:
+              type: integer
+    UserProfileResponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        avatar_url:
+          type: string
+          format: uri
+        role:
+          type: string
+          enum:
+          - user
+          - admin
+        total_xp:
+          type: integer
+        current_streak:
+          type: integer
+        last_active_at:
+          type: string
+          format: date-time
+        joined_at:
+          type: string
+          format: date-time
+    QuizAttemptResponse:
+      type: object
+      properties:
+        attempt_id:
+          type: integer
+        quiz_id:
+          type: integer
+        quiz_title:
+          type: string
+        score:
+          type: integer
+        completed_at:
+          type: string
+          format: date-time
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        total_xp:
+          type: integer
+paths:
+  /register:
+    post:
+      summary: Mendaftarkan pengguna baru
+      tags:
+      - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Pengguna berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Request tidak valid
+        "409":
+          description: Email sudah terdaftar
+  /login:
+    post:
+      summary: Login pengguna
+      tags:
+      - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: "Login berhasil, mengembalikan token JWT"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Email atau password salah
+  /leaderboard:
+    get:
+      summary: Mengambil papan peringkat
+      tags:
+      - Leaderboard
+      parameters:
+      - name: limit
+        in: query
+        description: Jumlah pengguna yang ditampilkan
+        schema:
+          type: integer
+          default: 100
+      responses:
+        "200":
+          description: Berhasil mengambil data leaderboard
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+  /quizzes:
+    get:
+      summary: Mengambil daftar semua kuis
+      tags:
+      - Quiz
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: dialect
+        in: query
+        schema:
+          type: string
+          enum:
+          - toba
+          - karo
+      - name: level
+        in: query
+        schema:
+          type: integer
+      - name: title
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Berhasil mengambil daftar kuis
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizResponse"
+        "401":
+          description: Tidak terotentikasi
+  /quizzes/{quizId}/start:
+    get:
+      summary: Memulai sebuah kuis
+      tags:
+      - Quiz
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: quizId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: "Berhasil memulai kuis, mengembalikan pertanyaan pertama"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizQuestionResponse"
+        "401":
+          description: Tidak terotentikasi
+        "404":
+          description: Kuis tidak ditemukan atau tidak memiliki pertanyaan
+  /quizzes/submit:
+    post:
+      summary: Mengirim jawaban untuk soal pilihan ganda/gambar
+      tags:
+      - Quiz
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAnswerRequest"
+      responses:
+        "200":
+          description: Jawaban berhasil diproses
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitAnswerResponse"
+        "401":
+          description: Tidak terotentikasi
+        "404":
+          description: Sesi kuis tidak ditemukan
+  /quizzes/submit-drawing:
+    post:
+      summary: Mengirim skor untuk soal tipe menggambar
+      tags:
+      - Quiz
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitDrawingRequest"
+      responses:
+        "200":
+          description: Skor berhasil diproses
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitAnswerResponse"
+        "401":
+          description: Tidak terotentikasi
+        "404":
+          description: Sesi kuis tidak ditemukan
+  /users/profile:
+    get:
+      summary: Mengambil profil pengguna yang sedang login
+      tags:
+      - User Profile
+      security:
+      - BearerAuth: []
+      responses:
+        "200":
+          description: Berhasil mengambil data profil
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileResponse"
+        "401":
+          description: Tidak terotentikasi
+    put:
+      summary: Memperbarui profil pengguna yang sedang login
+      tags:
+      - User Profile
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Berhasil memperbarui profil
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileResponse"
+        "401":
+          description: Tidak terotentikasi
+  /users/profile/attempts:
+    get:
+      summary: Mengambil riwayat pengerjaan kuis pengguna
+      tags:
+      - User Profile
+      security:
+      - BearerAuth: []
+      responses:
+        "200":
+          description: Berhasil mengambil riwayat kuis
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizAttemptResponse"
+        "401":
+          description: Tidak terotentikasi
