@@ -118,7 +118,7 @@ func (s *UserProfileServiceImpl) GetMyAttempts(ctx context.Context, userID strin
 	var attemptsResponse []web.QuizAttemptsResponse
 	for _, quizAttempt := range attempts {
 		response := web.QuizAttemptsResponse{
-			AttemptID:   quizAttempt.ID,
+			//AttemptID:   quizAttempt.ID,
 			QuizID:      quizAttempt.QuizID,
 			QuizTitle:   quizAttempt.Quizzes.Title,
 			Score:       quizAttempt.Score,
