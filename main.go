@@ -4,9 +4,11 @@ import (
 	"context"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 	"github.com/rizkycahyono97/aksara_batak_api/config"
 	"github.com/rizkycahyono97/aksara_batak_api/controllers"
+	"github.com/rizkycahyono97/aksara_batak_api/middleware"
 	"github.com/rizkycahyono97/aksara_batak_api/repositories"
 	"github.com/rizkycahyono97/aksara_batak_api/routes"
 	"github.com/rizkycahyono97/aksara_batak_api/services"
@@ -53,6 +55,7 @@ func main() {
 	//initialize fiber,routes,static
 	app := fiber.New()
 	app.Static("/assets", "./public")
+	app.Use(cors.New(middleware.SetupCors())) // CORS
 	routes.SetupRoutes(app, authController, quizController, userProfileController, leaderboardController)
 
 	//gracefull shutdown
