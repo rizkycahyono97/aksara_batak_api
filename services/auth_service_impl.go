@@ -17,17 +17,19 @@ import (
 
 // dependency
 type AuthServiceImpl struct {
-	UserRepository repositories.UserRepository
-	Validate       *validator.Validate
-	Log            *slog.Logger
+	UserRepository        repositories.UserRepository
+	UserProfileRepository repositories.UserProfileRepository
+	Validate              *validator.Validate
+	Log                   *slog.Logger
 }
 
 // dependncy injection
-func NewAuthService(userRepository repositories.UserRepository, validate *validator.Validate, log *slog.Logger) AuthService {
+func NewAuthService(userRepository repositories.UserRepository, userProfileRepository repositories.UserProfileRepository, validate *validator.Validate, log *slog.Logger) AuthService {
 	return &AuthServiceImpl{
-		UserRepository: userRepository,
-		Validate:       validate,
-		Log:            log,
+		UserRepository:        userRepository,
+		UserProfileRepository: userProfileRepository,
+		Validate:              validate,
+		Log:                   log,
 	}
 }
 
@@ -68,6 +70,16 @@ func (s *AuthServiceImpl) Register(ctx context.Context, req web.RegisterUserRequ
 	if err != nil {
 		s.Log.ErrorContext(ctx, "failed to create new user", "error", err)
 		return domain.Users{}, errors.New("failed to create user")
+	}
+
+	//assign profile untk pengguna baru
+	newProfile := domain.UserProfiles{
+		UserID: userNew.UUID,
+	}
+
+	//simpan ke user_profile
+	if err = s.UserProfileRepository.CreateUserProfile(ctx, &newProfile); err != nil {
+		s.Log.ErrorContext(ctx, "failed to create new user profile", "error", err, "user_id", userNew.UUID)
 	}
 
 	s.Log.DebugContext(ctx, "user registered successfully", "user", userNew)

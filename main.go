@@ -33,27 +33,26 @@ func main() {
 	config.InitDB()
 	validate := validator.New()
 
-	// === DEPENDENCY INJECTION ===
-	// rantai auth
+	// === DEPENDENCY INJECTION (URUTAN YANG BENAR) ===
+	// 1. Inisialisasi semua REPOSITORY terlebih dahulu
 	authRepo := repositories.NewUserRepository(config.DB)
-	authService := services.NewAuthService(authRepo, validate, logger)
-	authController := controllers.NewAuthController(authService, logger)
-	//quiz attempts
-	quizAttemptRepo := repositories.NewQuizAttemptRepository(config.DB)
-	// user Profile
 	userProfileRepo := repositories.NewUserProfileRepository(config.DB)
-	userProfileService := services.NewUserProfileService(authRepo, userProfileRepo, quizAttemptRepo, validate, logger)
-	userProfileController := controllers.NewUserProfileController(userProfileService, logger)
-	// Rantai Quiz
 	quizRepo := repositories.NewQuizRepository(config.DB)
-	quizService := services.NewQuizService(quizRepo, validate, logger, userProfileRepo)
-	quizController := controllers.NewQuizController(quizService, logger)
-	//leaderboard
-	leaderboardService := services.NewLeaderboardService(userProfileRepo, logger)
-	leaderboardController := controllers.NewLeaderboardController(leaderboardService, logger)
-	//lesson
+	quizAttemptRepo := repositories.NewQuizAttemptRepository(config.DB)
 	lessonRepo := repositories.NewLessonRepository(config.DB)
+
+	// 2. Inisialisasi semua SERVICE
+	authService := services.NewAuthService(authRepo, userProfileRepo, validate, logger)
+	userProfileService := services.NewUserProfileService(authRepo, userProfileRepo, quizAttemptRepo, validate, logger)
+	quizService := services.NewQuizService(quizRepo, validate, logger, userProfileRepo)
+	leaderboardService := services.NewLeaderboardService(userProfileRepo, logger)
 	lessonService := services.NewLessonService(lessonRepo, validate, logger)
+
+	// 3. Inisialisasi semua CONTROLLER
+	authController := controllers.NewAuthController(authService, logger)
+	userProfileController := controllers.NewUserProfileController(userProfileService, logger)
+	quizController := controllers.NewQuizController(quizService, logger)
+	leaderboardController := controllers.NewLeaderboardController(leaderboardService, logger)
 	lessonsController := controllers.NewLessonController(lessonService, quizService, logger)
 
 	//initialize fiber,routes,static

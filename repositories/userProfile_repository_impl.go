@@ -15,6 +15,11 @@ func NewUserProfileRepository(db *gorm.DB) UserProfileRepository {
 	return &UserProfileRepositoryImpl{db: db}
 }
 
+// method untuk membuat userProfile baru
+func (u UserProfileRepositoryImpl) CreateUserProfile(ctx context.Context, profile *domain.UserProfiles) error {
+	return u.db.WithContext(ctx).Create(profile).Error
+}
+
 func (u UserProfileRepositoryImpl) FindUserProfileByID(ctx context.Context, userID string) (domain.UserProfiles, error) {
 	var profile domain.UserProfiles
 	if err := u.db.WithContext(ctx).Where("user_id = ?", userID).First(&profile).Error; err != nil {
