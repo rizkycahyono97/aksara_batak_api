@@ -7,4 +7,5 @@ import (
 
 type QuizAttemptRepository interface {
 	FindAllQuizAttemptByUserID(ctx context.Context, userID string) ([]domain.QuizAttempts, error)
+	FindCompletedQuizIDsByUserID(ctx context.Context, userID string) ([]uint, error)
 }

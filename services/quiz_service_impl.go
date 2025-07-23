@@ -28,6 +28,7 @@ type QuizServiceImpl struct {
 	Validate              *validator.Validate
 	Log                   *slog.Logger
 	QuizRepository        repositories.QuizRepository
+	QuizAttemptRepository repositories.QuizAttemptRepository
 	UserProfileRepository repositories.UserProfileRepository
 
 	//untuk meyimpan sesi kuis yang aktif
@@ -38,12 +39,14 @@ type QuizServiceImpl struct {
 // constructor
 func NewQuizService(
 	quizRepository repositories.QuizRepository,
+	quizAttemptRepository repositories.QuizAttemptRepository,
 	validate *validator.Validate,
 	log *slog.Logger,
 	userProfileRepository repositories.UserProfileRepository,
 ) QuizService {
 	return &QuizServiceImpl{
 		QuizRepository:        quizRepository,
+		QuizAttemptRepository: quizAttemptRepository,
 		UserProfileRepository: userProfileRepository,
 		Validate:              validate,
 		Log:                   log,
@@ -419,14 +422,27 @@ func (s *QuizServiceImpl) SubmitDrawingAnswer(ctx context.Context, request web.S
 	return response, nil
 }
 
-func (s *QuizServiceImpl) GetQuizzesByLessonID(ctx context.Context, lessonID uint) ([]web.QuizResponse, error) {
+func (s *QuizServiceImpl) GetQuizzesByLessonID(ctx context.Context, lessonID uint, userID string) ([]web.QuizResponse, error) {
 	s.Log.InfoContext(ctx, "get quizzes by lesson ID process started", "lessonID", lessonID)
 
-	//repository
+	//QuizRepository
 	quizzes, err := s.QuizRepository.FindAllQuizByLessonID(ctx, lessonID)
 	if err != nil {
 		s.Log.ErrorContext(ctx, "failed to find quizzes by lesson ID from repository", "error", err, "lessonID", lessonID)
 		return nil, err
+	}
+
+	//QuizAttemptRepository untuk stempel is_completed pada suatu quiz
+	completedQuizIDs, err := s.QuizAttemptRepository.FindCompletedQuizIDsByUserID(ctx, userID)
+	if err != nil {
+		s.Log.ErrorContext(ctx, "failed to find completed quiz IDs", "error", err, "userID", userID)
+		return nil, err
+	}
+
+	// memberikan tanda untuk id dengan true
+	completedMap := make(map[uint]bool)
+	for _, id := range completedQuizIDs {
+		completedMap[id] = true
 	}
 
 	//DTO
@@ -439,6 +455,7 @@ func (s *QuizServiceImpl) GetQuizzesByLessonID(ctx context.Context, lessonID uin
 			Description: quiz.Description,
 			Level:       strconv.Itoa(int(quiz.Level)),
 			Dialect:     quiz.Dialect,
+			IsCompleted: completedMap[quiz.ID], // assign jika id ada di completedMap
 		}
 		quizResponse = append(quizResponse, response)
 	}

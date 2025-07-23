@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/rizkycahyono97/aksara_batak_api/model/web"
 	"github.com/rizkycahyono97/aksara_batak_api/services"
 	"log/slog"
@@ -58,8 +59,14 @@ func (c *LessonController) GetQuizzesByLessonID(f *fiber.Ctx) error {
 	}
 	lessonID := uint(id)
 
+	//mengambil userID dari token JWT
+	userToken := f.Locals("user").(*jwt.Token)
+	claims := userToken.Claims.(jwt.MapClaims)
+	userID := claims["uuid"].(string)
+	c.Log.InfoContext(f.Context(), "user identified for personalized quiz list", "userID", userID)
+
 	//service
-	quizzes, err := c.QuizService.GetQuizzesByLessonID(f.Context(), lessonID)
+	quizzes, err := c.QuizService.GetQuizzesByLessonID(f.Context(), lessonID, userID)
 	if err != nil {
 		c.Log.ErrorContext(f.Context(), "internal server error on get quizzes by lesson", "error", err, "lessonID", lessonID)
 		return f.Status(fiber.StatusInternalServerError).JSON(web.ApiResponse{

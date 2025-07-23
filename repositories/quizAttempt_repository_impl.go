@@ -27,3 +27,22 @@ func (q QuizAttemptRepositoryImpl) FindAllQuizAttemptByUserID(ctx context.Contex
 	}
 	return attempts, nil
 }
+
+// method untuk pengambilan quizzes id yang sudah selesai / is_completed
+func (q QuizAttemptRepositoryImpl) FindCompletedQuizIDsByUserID(ctx context.Context, userID string) ([]uint, error) {
+	var completedQuizIDs []uint
+
+	// Distinct(): untuk memastikan setiap ID kuis hanya muncul sekali,
+	// query untuk mencari user ini sudah menyelesaikan quiz apa aja,
+	// jika ada quiz_id yang sama maka tampilkan sekali
+	err := q.DB.WithContext(ctx).
+		Distinct("quiz_id").
+		Model(&domain.QuizAttempts{}).
+		Where("user_id = ?", userID).
+		Pluck("quiz_id", &completedQuizIDs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return completedQuizIDs, nil
+}

@@ -7,6 +7,7 @@ type QuizResponse struct {
 	Description string `json:"description"`
 	Level       string `json:"level"`
 	Dialect     string `json:"dialect"`
+	IsCompleted bool   `json:"is_completed"`
 }
 
 // DTO untuk satu pilihan jawaban

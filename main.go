@@ -44,7 +44,7 @@ func main() {
 	// 2. Inisialisasi semua SERVICE
 	authService := services.NewAuthService(authRepo, userProfileRepo, validate, logger)
 	userProfileService := services.NewUserProfileService(authRepo, userProfileRepo, quizAttemptRepo, validate, logger)
-	quizService := services.NewQuizService(quizRepo, validate, logger, userProfileRepo)
+	quizService := services.NewQuizService(quizRepo, quizAttemptRepo, validate, logger, userProfileRepo)
 	leaderboardService := services.NewLeaderboardService(userProfileRepo, logger)
 	lessonService := services.NewLessonService(lessonRepo, validate, logger)
 

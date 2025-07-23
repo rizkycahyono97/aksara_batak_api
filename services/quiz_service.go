@@ -11,5 +11,5 @@ type QuizService interface {
 	SubmitAnswer(ctx context.Context, request web.SubmitAnswerRequest) (web.SubmitAnswerResponse, error)
 	//GetQuizAttemptResult(ctx context.Context, attemptID uint) (web.QuizAttemptResponse, error)
 	SubmitDrawingAnswer(ctx context.Context, request web.SubmitDrawingRequest) (web.SubmitAnswerResponse, error)
-	GetQuizzesByLessonID(ctx context.Context, lessonID uint) ([]web.QuizResponse, error)
+	GetQuizzesByLessonID(ctx context.Context, lessonID uint, userID string) ([]web.QuizResponse, error)
 }
