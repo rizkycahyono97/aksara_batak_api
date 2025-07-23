@@ -239,6 +239,24 @@ components:
           format: uri
         total_xp:
           type: integer
+    LessonResponse:
+      type: object
+      description: Representasi data untuk satu lessson.
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Aksara Batak"
+        description:
+          type: string
+          example: "Pelajari dasar-dasar penulisan dan pengenalan Ina ni Surat."
+        icon_url:
+          type: string
+          format: uri
+          example: "/assets/icons/lesson_aksara.png"
+
 paths:
   /register:
     post:
@@ -464,3 +482,63 @@ paths:
                   $ref: "#/components/schemas/QuizAttemptResponse"
         "401":
           description: Tidak terotentikasi
+  /lessons:
+    get:
+      summary: Mengambil semua pelajaran
+      description: Mengembalikan daftar semua pelajaran yang tersedia, diurutkan berdasarkan urutan yang telah ditentukan. Endpoint ini bersifat publik.
+      tags: [ Lessons ]
+      responses:
+        '200':
+          description: Berhasil mengambil daftar pelajaran.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Lessons retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LessonResponse'
+        '500':
+          description: Internal Server Error
+  /lessons/{lessonID}/quizzes:
+    get:
+      summary: Mengambil semua quizzes untuk lesson tertentu.
+      description: Mengembalikan daftar semua quizzes yang terkait dengan satu `lessonId` yang spesifik. Endpoint ini bersifat publik.
+      tags: [ Lessons ]
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          description: ID dari pelajaran yang ingin dilihat kuisnya.
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Berhasil mengambil daftar kuis untuk pelajaran tersebut.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Quizzes for the lesson retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QuizResponse'
+        '400':
+          description: Format ID Pelajaran tidak valid (bukan angka).
+        '500':
+          description: Internal Server Error
