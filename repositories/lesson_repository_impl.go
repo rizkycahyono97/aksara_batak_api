@@ -16,6 +16,7 @@ func NewLessonRepository(db *gorm.DB) LessonRepository {
 	}
 }
 
+// select semua lessons dan mengurutkanya
 func (r LessonRepositoryImpl) FindAllLesson(ctx context.Context) ([]domain.Lessons, error) {
 	var lessons []domain.Lessons
 

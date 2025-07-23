@@ -104,3 +104,20 @@ func (r *QuizRepositoryImpl) CreateQuizAttempt(ctx context.Context, attempt *dom
 
 	return nil
 }
+
+// mengambil quiz berdasarkan lessonID
+func (r *QuizRepositoryImpl) FindAllQuizByLessonID(ctx context.Context, lessonID uint) ([]domain.Quizzes, error) {
+	var quizzes []domain.Quizzes
+
+	//mengambil quiz berdasarkan lesson_id
+	//asc untuk mengurutkan berdasarkan level
+	err := r.db.WithContext(ctx).
+		Where("lesson_id = ?", lessonID).
+		Order("level ASC").
+		Find(&quizzes).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return quizzes, nil
+}
