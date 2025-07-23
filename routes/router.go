@@ -44,5 +44,5 @@ func SetupRoutes(
 	private.Get("/users/profile/attempts", userProfileController.GetMyAttempts)
 
 	// lessons
-	private.Get("/lessons")
+	private.Get("/lessons", lessonsController.GetAllLessons)
 }
