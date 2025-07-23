@@ -28,5 +28,5 @@ func (r LessonRepositoryImpl) FindAllLesson(ctx context.Context) ([]domain.Lesso
 		return nil, err
 	}
 
-	return lessons, nil
+	return lessons, err
 }
