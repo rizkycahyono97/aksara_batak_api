@@ -54,7 +54,7 @@ func main() {
 	//lesson
 	lessonRepo := repositories.NewLessonRepository(config.DB)
 	lessonService := services.NewLessonService(lessonRepo, validate, logger)
-	lessonsController := controllers.NewLessonController(lessonService, logger)
+	lessonsController := controllers.NewLessonController(lessonService, quizService, logger)
 
 	//initialize fiber,routes,static
 	app := fiber.New()

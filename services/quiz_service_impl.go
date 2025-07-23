@@ -434,6 +434,7 @@ func (s *QuizServiceImpl) GetQuizzesByLessonID(ctx context.Context, lessonID uin
 	for _, quiz := range quizzes {
 		response := web.QuizResponse{
 			ID:          quiz.ID,
+			LessonID:    quiz.LessonID,
 			Title:       quiz.Title,
 			Description: quiz.Description,
 			Level:       strconv.Itoa(int(quiz.Level)),

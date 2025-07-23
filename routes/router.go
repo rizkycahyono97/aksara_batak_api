@@ -45,4 +45,5 @@ func SetupRoutes(
 
 	// lessons
 	private.Get("/lessons", lessonsController.GetAllLessons)
+	private.Get("/lessons/:lessonID/quizzes", lessonsController.GetQuizzesByLessonID)
 }

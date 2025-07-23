@@ -2,6 +2,7 @@ package web
 
 type QuizResponse struct {
 	ID          uint   `json:"id"`
+	LessonID    uint   `json:"lesson_id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Level       string `json:"level"`
