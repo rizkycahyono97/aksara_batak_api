@@ -418,3 +418,30 @@ func (s *QuizServiceImpl) SubmitDrawingAnswer(ctx context.Context, request web.S
 
 	return response, nil
 }
+
+func (s *QuizServiceImpl) GetQuizzesByLessonID(ctx context.Context, lessonID uint) ([]web.QuizResponse, error) {
+	s.Log.InfoContext(ctx, "get quizzes by lesson ID process started", "lessonID", lessonID)
+
+	//repository
+	quizzes, err := s.QuizRepository.FindAllQuizByLessonID(ctx, lessonID)
+	if err != nil {
+		s.Log.ErrorContext(ctx, "failed to find quizzes by lesson ID from repository", "error", err, "lessonID", lessonID)
+		return nil, err
+	}
+
+	//DTO
+	var quizResponse []web.QuizResponse
+	for _, quiz := range quizzes {
+		response := web.QuizResponse{
+			ID:          quiz.ID,
+			Title:       quiz.Title,
+			Description: quiz.Description,
+			Level:       strconv.Itoa(int(quiz.Level)),
+			Dialect:     quiz.Dialect,
+		}
+		quizResponse = append(quizResponse, response)
+	}
+
+	s.Log.InfoContext(ctx, "succesfully to get quizzes by lesson ID process finished", "lessonID", lessonID)
+	return quizResponse, err
+}
