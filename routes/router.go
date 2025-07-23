@@ -12,6 +12,7 @@ func SetupRoutes(
 	quizController *controllers.QuizController,
 	userProfileController *controllers.UserProfileController,
 	leaderboardController *controllers.LeaderboardController,
+	lessonsController *controllers.LessonController,
 ) {
 	//intance middleware
 	jwtMiddleware := middleware.JWTMiddleware()
@@ -41,4 +42,7 @@ func SetupRoutes(
 	private.Get("/users/profile", userProfileController.GetMyProfile)
 	private.Put("/users/profile", userProfileController.UpdateMyProfile)
 	private.Get("/users/profile/attempts", userProfileController.GetMyAttempts)
+
+	// lessons
+	private.Get("/lessons")
 }

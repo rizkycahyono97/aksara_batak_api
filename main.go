@@ -51,12 +51,16 @@ func main() {
 	//leaderboard
 	leaderboardService := services.NewLeaderboardService(userProfileRepo, logger)
 	leaderboardController := controllers.NewLeaderboardController(leaderboardService, logger)
+	//lesson
+	lessonRepo := repositories.NewLessonRepository(config.DB)
+	lessonService := services.NewLessonService(lessonRepo, validate, logger)
+	lessonsController := controllers.NewLessonController(lessonService, logger)
 
 	//initialize fiber,routes,static
 	app := fiber.New()
 	app.Static("/assets", "./public")
 	app.Use(cors.New(middleware.SetupCors())) // CORS
-	routes.SetupRoutes(app, authController, quizController, userProfileController, leaderboardController)
+	routes.SetupRoutes(app, authController, quizController, userProfileController, leaderboardController, lessonsController)
 
 	//gracefull shutdown
 	quit := make(chan os.Signal, 1)
