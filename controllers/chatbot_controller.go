@@ -25,6 +25,7 @@ func (c *ChatbotController) HandlePublicChat(f *fiber.Ctx) error {
 	//parse request ke json
 	var request web.ChatbotRequest
 	if err := f.BodyParser(&request); err != nil {
+		c.Log.InfoContext(f.Context(), "request body parse error", "request", request.Message)
 		return f.Status(fiber.StatusBadRequest).JSON(web.ApiResponse{
 			Code:    "400",
 			Message: "BAD_REQUEST",
@@ -34,6 +35,7 @@ func (c *ChatbotController) HandlePublicChat(f *fiber.Ctx) error {
 
 	// jika pesan kosong
 	if request.Message == "" {
+		c.Log.InfoContext(f.Context(), "pesan kosong")
 		return f.Status(fiber.StatusInternalServerError).JSON(web.ApiResponse{
 			Code:    "500",
 			Message: "INTERNAL_SERVER_ERROR",
