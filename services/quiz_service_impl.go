@@ -210,10 +210,23 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 	//logika jika kuis jika sudah selesai
 	if session.CurrentQuestionIndex >= len(session.QuestionIDs) {
 		response.QuizFinished = true
-		xpEarned := session.CurrentScore // 1 skor 1 xp
+
+		//periksa riwayat, apakah penegerjaan pertama
+		count, err := s.QuizAttemptRepository.CountByUserIDAndQuizID(ctx, session.UserID, session.QuizID)
+		if err != nil {
+			s.Log.ErrorContext(ctx, "failed to count previous attempts before finalizing response", "error", err)
+			count = 1
+		}
+
+		// menentukan xpEarned berdasarkan hasil pemeriksaan
+		xpEarnedForResponse := 0
+		if count == 0 {
+			xpEarnedForResponse = session.CurrentScore
+		}
+
 		response.FinalResult = &web.FinalResultResponse{
-			FinalScore: xpEarned,
-			XPEarned:   xpEarned,
+			FinalScore: session.CurrentScore,
+			XPEarned:   xpEarnedForResponse,
 		}
 
 		//goroutine agar tidak memblokir response, dan kirim ke response
@@ -250,11 +263,20 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 				newStreak = profile.CurrentStreak // selain itu streak samakan dengan currentStreak
 			}
 
-			//repository untuk update streak dan xp
-			if err := s.UserProfileRepository.UpdateXPAndStreak(bgCtx, session.UserID, xpEarned, newStreak, today); err != nil {
+			//berikan xp jika pengejaan quiz pertama saja
+			xpToUpdate := 0
+			if count <= 1 {
+				xpToUpdate = session.CurrentScore
+				s.Log.InfoContext(bgCtx, "First completion of quiz. Awarding XP.", "userID", session.UserID, "quizID", session.QuizID)
+			} else {
+				s.Log.InfoContext(bgCtx, "Repeat completion of quiz. No XP awarded.", "userID", session.UserID, "quizID", session.QuizID)
+			}
+
+			//repository untuk update streak dan xp dari xpToUpdate
+			if err := s.UserProfileRepository.UpdateXPAndStreak(bgCtx, session.UserID, xpToUpdate, newStreak, today); err != nil {
 				s.Log.ErrorContext(bgCtx, "failed to update user xp and streak", "error", err, "userID", session.UserID)
 			}
-			s.Log.InfoContext(bgCtx, "user profile updated after quiz", "userID", session.UserID, "xp_earned", xpEarned, "new_streak", newStreak)
+			//s.Log.InfoContext(bgCtx, "user profile updated after quiz", "userID", session.UserID, "xp_earned", xp, "new_streak", newStreak)
 		}()
 
 		//hapus session dari memory

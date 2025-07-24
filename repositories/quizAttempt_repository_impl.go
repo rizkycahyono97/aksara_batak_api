@@ -46,3 +46,21 @@ func (q QuizAttemptRepositoryImpl) FindCompletedQuizIDsByUserID(ctx context.Cont
 
 	return completedQuizIDs, nil
 }
+
+// method untuk menghitung riwayat pengerjaan sebuah quiz
+func (q QuizAttemptRepositoryImpl) CountByUserIDAndQuizID(ctx context.Context, userID string, quizID uint) (int64, error) {
+	var count int64
+
+	//Count = GORM untuk menjalankan query "SELECT COUNT(*)"
+	// untuk menghitung jumlah quiz yang dikerjakan user
+	//dan masukan ke dalam variable count
+	err := q.DB.WithContext(ctx).
+		Model(&domain.QuizAttempts{}).
+		Where("user_id = ? and quiz_id = ?", userID, quizID).
+		Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
