@@ -47,6 +47,7 @@ func main() {
 	quizService := services.NewQuizService(quizRepo, quizAttemptRepo, validate, logger, userProfileRepo)
 	leaderboardService := services.NewLeaderboardService(userProfileRepo, logger)
 	lessonService := services.NewLessonService(lessonRepo, validate, logger)
+	chatbotService := services.NewChatbotService(logger)
 
 	// 3. Inisialisasi semua CONTROLLER
 	authController := controllers.NewAuthController(authService, logger)
@@ -54,12 +55,13 @@ func main() {
 	quizController := controllers.NewQuizController(quizService, logger)
 	leaderboardController := controllers.NewLeaderboardController(leaderboardService, logger)
 	lessonsController := controllers.NewLessonController(lessonService, quizService, logger)
+	chatbotController := controllers.NewChatbotController(chatbotService, logger)
 
 	//initialize fiber,routes,static
 	app := fiber.New()
 	app.Static("/assets", "./public")
 	app.Use(cors.New(middleware.SetupCors())) // CORS
-	routes.SetupRoutes(app, authController, quizController, userProfileController, leaderboardController, lessonsController)
+	routes.SetupRoutes(app, authController, quizController, userProfileController, leaderboardController, lessonsController, chatbotController)
 
 	//gracefull shutdown
 	quit := make(chan os.Signal, 1)

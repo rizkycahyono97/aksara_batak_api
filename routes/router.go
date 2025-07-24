@@ -13,6 +13,7 @@ func SetupRoutes(
 	userProfileController *controllers.UserProfileController,
 	leaderboardController *controllers.LeaderboardController,
 	lessonsController *controllers.LessonController,
+	chatbotController *controllers.ChatbotController,
 ) {
 	//intance middleware
 	jwtMiddleware := middleware.JWTMiddleware()
@@ -20,12 +21,15 @@ func SetupRoutes(
 	//=============
 	//public route
 	//=============
-	publik := app.Group("/api/v1")
-	publik.Post("/login", authController.Login)
-	publik.Post("/register", authController.Register)
+	public := app.Group("/api/v1")
+	public.Post("/login", authController.Login)
+	public.Post("/register", authController.Register)
 
 	//leaderboard
-	publik.Get("/leaderboard", leaderboardController.GetLeaderboards)
+	public.Get("/leaderboard", leaderboardController.GetLeaderboards)
+
+	//chatbot
+	public.Post("/chatpub", chatbotController.HandlePublicChat)
 
 	//=============
 	//private route
