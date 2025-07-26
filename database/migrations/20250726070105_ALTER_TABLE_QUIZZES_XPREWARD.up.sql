@@ -1,0 +1,2 @@
+ALTER TABLE quizzes
+    ADD COLUMN xp_reward INT UNSIGNED NULL DEFAULT 50 AFTER dialect;

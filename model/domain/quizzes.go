@@ -9,6 +9,7 @@ type Quizzes struct {
 	Description string    `json:"description" gorm:"type:text;not null"`
 	Level       uint      `json:"level" gorm:"type:int;not null;default:0"`
 	Dialect     string    `json:"dialect" gorm:"type:enum('toba', 'karo');not null"`
+	XpReward    uint      `json:"xp_reward" gorm:"type:int;unsigned;null;default:50"`
 	UpdatedAt   time.Time `json:"updated_at" gorm:"type:DATETIME;column:updated_at; autoUpdateTime"`
 	DeletedAt   time.Time `json:"deleted_at" gorm:"column:deleted_at;type:DATETIME;index"`
 

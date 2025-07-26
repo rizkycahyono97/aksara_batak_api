@@ -219,6 +219,13 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 		//cek kelulusan
 		userPassedThisAttempt := uint(session.CurrentScore) >= passingScore
 
+		//repo untuk mengambil jumlah xp_earned
+		quiz, err := s.QuizRepository.FindByID(ctx, session.QuizID)
+		if err != nil {
+			s.Log.ErrorContext(ctx, "failed to get quiz details for finalization", "error", err)
+			return web.SubmitAnswerResponse{}, nil
+		}
+
 		xpToUpdate := 0
 
 		if userPassedThisAttempt {
@@ -226,7 +233,7 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 			if err != nil {
 				s.Log.ErrorContext(ctx, "failed to check past passing status", "error", err)
 			} else if !hasPassedBefore {
-				xpToUpdate = session.CurrentScore
+				xpToUpdate = int(quiz.XpReward)
 				s.Log.InfoContext(ctx, "First time passing quiz. Awarding XP.", "userID", session.UserID, "quizID", session.QuizID)
 			} else {
 				s.Log.InfoContext(ctx, "Already passed this quiz before. No XP awarded.", "userID", session.UserID, "quizID", session.QuizID)

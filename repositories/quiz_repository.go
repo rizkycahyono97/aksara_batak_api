@@ -14,4 +14,5 @@ type QuizRepository interface {
 	CreateQuizAttempt(ctx context.Context, attempt *domain.QuizAttempts) error
 	FindAllQuizByLessonID(ctx context.Context, lessonID uint) ([]domain.Quizzes, error)
 	FindAllByLessonIDWithQuestionCount(ctx context.Context, lessonID uint) ([]domain.QuizWithQuestionCount, error)
+	FindByID(ctx context.Context, quizID uint) (domain.Quizzes, error)
 }

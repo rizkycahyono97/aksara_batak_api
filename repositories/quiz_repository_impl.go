@@ -137,3 +137,16 @@ func (r *QuizRepositoryImpl) FindAllByLessonIDWithQuestionCount(ctx context.Cont
 
 	return result, nil
 }
+
+func (r *QuizRepositoryImpl) FindByID(ctx context.Context, quizID uint) (domain.Quizzes, error) {
+	var quiz domain.Quizzes
+
+	// query: SELECT * FROM quizzes WHERE id = ? LIMIT 1;
+	err := r.db.WithContext(ctx).
+		First(&quiz, quizID).Error
+	if err != nil {
+		return domain.Quizzes{}, err
+	}
+
+	return quiz, nil
+}
