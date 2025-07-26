@@ -265,7 +265,7 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 
 			//berikan xp jika pengejaan quiz pertama saja
 			xpToUpdate := 0
-			if count <= 1 {
+			if count == 0 {
 				xpToUpdate = session.CurrentScore
 				s.Log.InfoContext(bgCtx, "First completion of quiz. Awarding XP.", "userID", session.UserID, "quizID", session.QuizID)
 			} else {
@@ -322,7 +322,7 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 	return response, nil
 }
 
-// method khusus untuk submit jika question_type == "drawing"
+// method khusus untuk submit drawing
 func (s *QuizServiceImpl) SubmitDrawingAnswer(ctx context.Context, request web.SubmitDrawingRequest) (web.SubmitAnswerResponse, error) {
 	s.Log.InfoContext(ctx, "submit drawing answer process started", "sessionID", request.SessionID)
 
