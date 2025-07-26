@@ -64,3 +64,41 @@ func (q QuizAttemptRepositoryImpl) CountByUserIDAndQuizID(ctx context.Context, u
 
 	return count, nil
 }
+
+// query untuk mencari skor tertinggi di semua kuis
+func (q QuizAttemptRepositoryImpl) FindHighestScoresByUserID(ctx context.Context, userID string) (map[uint]uint, error) {
+	var results []domain.QuizHighestScore
+
+	// SELECT quiz_id, MAX(score) as max_score FROM quiz_attempts WHERE user_id = ? GROUP BY quiz_id
+	err := q.DB.WithContext(ctx).
+		Model(&domain.QuizAttempts{}).
+		Select("quiz_id, MAX(score) as max_score").
+		Where("user_id = ?", userID).
+		Group("quiz_id").
+		Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	scoreMap := make(map[uint]uint)
+	for _, result := range results {
+		scoreMap[result.QuizID] = result.MaxScore
+	}
+
+	return scoreMap, nil
+}
+
+// nyari quiz_attempt berdasarkan score / passingScore
+func (q QuizAttemptRepositoryImpl) HasUserPassedQuizBefore(ctx context.Context, userID string, quizID uint, passingScore uint) (bool, error) {
+	var count int64
+
+	err := q.DB.WithContext(ctx).
+		Model(&domain.QuizAttempts{}).
+		Where("user_id = ? AND quiz_id = ? AND score >= ?", userID, quizID, passingScore).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}

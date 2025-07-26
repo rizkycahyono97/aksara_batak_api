@@ -9,6 +9,7 @@ import (
 	"github.com/rizkycahyono97/aksara_batak_api/model/web"
 	"github.com/rizkycahyono97/aksara_batak_api/repositories"
 	"log/slog"
+	"math"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -207,26 +208,34 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 		CorrectOptionID: correctOptionID,
 	}
 
-	//logika jika kuis jika sudah selesai
+	//logika jika kuis jika sudah selesai & dan hanya menambahkan xp_earned ketika first ambil quiz
 	if session.CurrentQuestionIndex >= len(session.QuestionIDs) {
 		response.QuizFinished = true
 
-		//periksa riwayat, apakah penegerjaan pertama
-		count, err := s.QuizAttemptRepository.CountByUserIDAndQuizID(ctx, session.UserID, session.QuizID)
-		if err != nil {
-			s.Log.ErrorContext(ctx, "failed to count previous attempts before finalizing response", "error", err)
-			count = 1
-		}
+		//hituing skor kelulusan (70% dari semua soal == lulus)
+		maxPossibleScore := float64(len(session.QuestionIDs) * 10) //10 score setiap soal
+		passingScore := uint(math.Ceil(maxPossibleScore * 0.7))
 
-		// menentukan xpEarned berdasarkan hasil pemeriksaan
-		xpEarnedForResponse := 0
-		if count == 0 {
-			xpEarnedForResponse = session.CurrentScore
+		//cek kelulusan
+		userPassedThisAttempt := uint(session.CurrentScore) >= passingScore
+
+		xpToUpdate := 0
+
+		if userPassedThisAttempt {
+			hasPassedBefore, err := s.QuizAttemptRepository.HasUserPassedQuizBefore(ctx, session.UserID, session.QuizID, passingScore)
+			if err != nil {
+				s.Log.ErrorContext(ctx, "failed to check past passing status", "error", err)
+			} else if !hasPassedBefore {
+				xpToUpdate = session.CurrentScore
+				s.Log.InfoContext(ctx, "First time passing quiz. Awarding XP.", "userID", session.UserID, "quizID", session.QuizID)
+			} else {
+				s.Log.InfoContext(ctx, "Already passed this quiz before. No XP awarded.", "userID", session.UserID, "quizID", session.QuizID)
+			}
 		}
 
 		response.FinalResult = &web.FinalResultResponse{
 			FinalScore: session.CurrentScore,
-			XPEarned:   xpEarnedForResponse,
+			XPEarned:   xpToUpdate,
 		}
 
 		//goroutine agar tidak memblokir response, dan kirim ke response
@@ -234,7 +243,6 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 			//membuat context baru agar tidak terpengaruh oleh timout request
 			bgCtx := context.Background()
 
-			//assign struct kuis session ke quizAttempt
 			attempt := &domain.QuizAttempts{UserID: session.UserID, QuizID: session.QuizID, Score: uint(session.CurrentScore)}
 			if err := s.QuizRepository.CreateQuizAttempt(bgCtx, attempt); err != nil {
 				s.Log.ErrorContext(bgCtx, "failed to create quiz attempt", "error", err)
@@ -263,20 +271,10 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 				newStreak = profile.CurrentStreak // selain itu streak samakan dengan currentStreak
 			}
 
-			//berikan xp jika pengejaan quiz pertama saja
-			xpToUpdate := 0
-			if count == 0 {
-				xpToUpdate = session.CurrentScore
-				s.Log.InfoContext(bgCtx, "First completion of quiz. Awarding XP.", "userID", session.UserID, "quizID", session.QuizID)
-			} else {
-				s.Log.InfoContext(bgCtx, "Repeat completion of quiz. No XP awarded.", "userID", session.UserID, "quizID", session.QuizID)
-			}
-
 			//repository untuk update streak dan xp dari xpToUpdate
 			if err := s.UserProfileRepository.UpdateXPAndStreak(bgCtx, session.UserID, xpToUpdate, newStreak, today); err != nil {
 				s.Log.ErrorContext(bgCtx, "failed to update user xp and streak", "error", err, "userID", session.UserID)
 			}
-			//s.Log.InfoContext(bgCtx, "user profile updated after quiz", "userID", session.UserID, "xp_earned", xp, "new_streak", newStreak)
 		}()
 
 		//hapus session dari memory
@@ -447,37 +445,39 @@ func (s *QuizServiceImpl) SubmitDrawingAnswer(ctx context.Context, request web.S
 func (s *QuizServiceImpl) GetQuizzesByLessonID(ctx context.Context, lessonID uint, userID string) ([]web.QuizResponse, error) {
 	s.Log.InfoContext(ctx, "get quizzes by lesson ID process started", "lessonID", lessonID)
 
-	//QuizRepository
-	quizzes, err := s.QuizRepository.FindAllQuizByLessonID(ctx, lessonID)
+	//repository utuk mendapatkan semua kuis dalam pelajaran tertentu
+	quizzesInLesson, err := s.QuizRepository.FindAllByLessonIDWithQuestionCount(ctx, lessonID)
 	if err != nil {
-		s.Log.ErrorContext(ctx, "failed to find quizzes by lesson ID from repository", "error", err, "lessonID", lessonID)
+		s.Log.ErrorContext(ctx, "failed to find quizzes with question count", "error", err, "lessonID", lessonID)
 		return nil, err
 	}
 
-	//QuizAttemptRepository untuk stempel is_completed pada suatu quiz
-	completedQuizIDs, err := s.QuizAttemptRepository.FindCompletedQuizIDsByUserID(ctx, userID)
+	//repository untuk dapat higherScore
+	highestScoreMap, err := s.QuizAttemptRepository.FindHighestScoresByUserID(ctx, userID)
 	if err != nil {
-		s.Log.ErrorContext(ctx, "failed to find completed quiz IDs", "error", err, "userID", userID)
+		s.Log.ErrorContext(ctx, "failed to find user highest scores", "error", err, "userID", userID)
 		return nil, err
-	}
-
-	// memberikan tanda untuk id dengan true
-	completedMap := make(map[uint]bool)
-	for _, id := range completedQuizIDs {
-		completedMap[id] = true
 	}
 
 	//DTO
 	var quizResponse []web.QuizResponse
-	for _, quiz := range quizzes {
+	for _, quiz := range quizzesInLesson {
+		//hitung score maximum dan skor kelulusan (70%)
+		maxPossibleScore := float64(quiz.QuestionCount * 10)
+		passingScore := uint(math.Ceil(maxPossibleScore * 0.7))
+
+		//ambil score tertinggi
+		userHighestScore := highestScoreMap[quiz.ID]
+
+		isCompleted := userHighestScore >= passingScore
+
 		response := web.QuizResponse{
 			ID:          quiz.ID,
-			LessonID:    quiz.LessonID,
 			Title:       quiz.Title,
 			Description: quiz.Description,
 			Level:       strconv.Itoa(int(quiz.Level)),
 			Dialect:     quiz.Dialect,
-			IsCompleted: completedMap[quiz.ID], // assign jika id ada di completedMap
+			IsCompleted: isCompleted,
 		}
 		quizResponse = append(quizResponse, response)
 	}

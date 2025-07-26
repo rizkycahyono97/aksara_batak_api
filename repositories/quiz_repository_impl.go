@@ -105,7 +105,7 @@ func (r *QuizRepositoryImpl) CreateQuizAttempt(ctx context.Context, attempt *dom
 	return nil
 }
 
-// mengambil quiz berdasarkan lessonID
+// mengambil semua quiz berdasarkan lessonID
 func (r *QuizRepositoryImpl) FindAllQuizByLessonID(ctx context.Context, lessonID uint) ([]domain.Quizzes, error) {
 	var quizzes []domain.Quizzes
 
@@ -120,4 +120,20 @@ func (r *QuizRepositoryImpl) FindAllQuizByLessonID(ctx context.Context, lessonID
 	}
 
 	return quizzes, nil
+}
+
+func (r *QuizRepositoryImpl) FindAllByLessonIDWithQuestionCount(ctx context.Context, lessonID uint) ([]domain.QuizWithQuestionCount, error) {
+	var result []domain.QuizWithQuestionCount
+
+	err := r.db.WithContext(ctx).
+		Model(&domain.Quizzes{}).
+		Select("quizzes.*, (SELECT count(*) FROM questions WHERE questions.quiz_id = quizzes.id) as question_count").
+		Where("lesson_id = ?", lessonID).
+		Order("level ASC").
+		Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
