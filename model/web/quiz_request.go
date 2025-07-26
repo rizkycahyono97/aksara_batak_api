@@ -18,5 +18,5 @@ type SubmitAnswerRequest struct {
 type SubmitDrawingRequest struct {
 	SessionID  string `json:"session_id" validate:"required"`
 	QuestionID uint   `json:"question_id" validate:"required"`
-	Score      int    `json:"score" validate:"gte=0,lte=100"`
+	IsCorrect  bool   `json:"is_correct"`
 }

@@ -159,6 +159,83 @@ func (s *QuizServiceImpl) StartQuiz(ctx context.Context, quizID uint, userID str
 	return response, nil
 }
 
+func (s *QuizServiceImpl) finishQuizSession(ctx context.Context, session *QuizSession) (*web.FinalResultResponse, error) {
+	// 1. Ambil detail kuis untuk mendapatkan XpReward.
+	quiz, err := s.QuizRepository.FindByID(ctx, session.QuizID)
+	if err != nil {
+		s.Log.ErrorContext(ctx, "failed to get quiz details for finalization", "error", err)
+		return nil, err
+	}
+
+	// 2. Hitung skor kelulusan (70%).
+	maxPossibleScore := float64(len(session.QuestionIDs) * 10) // Asumsi 10 poin per soal
+	passingScore := uint(math.Ceil(maxPossibleScore * 0.7))
+
+	// 3. Cek apakah pengguna lulus pada percobaan kali ini.
+	userPassedThisAttempt := uint(session.CurrentScore) >= passingScore
+
+	xpToUpdate := 0 // Default, tidak ada XP yang diberikan
+
+	// 4. Hanya proses pemberian XP jika pengguna LULUS pada percobaan ini.
+	if userPassedThisAttempt {
+		// Periksa riwayat: Apakah ini kelulusan PERTAMA KALI?
+		hasPassedBefore, err := s.QuizAttemptRepository.HasUserPassedQuizBefore(ctx, session.UserID, session.QuizID, passingScore)
+		if err != nil {
+			s.Log.ErrorContext(ctx, "failed to check past passing status", "error", err)
+		} else if !hasPassedBefore {
+			// Jika belum pernah lulus sebelumnya, berikan hadiah XP statis dari kuis.
+			xpToUpdate = int(quiz.XpReward)
+			s.Log.InfoContext(ctx, "First time passing quiz. Awarding static XP.", "userID", session.UserID, "quizID", session.QuizID, "xp_reward", xpToUpdate)
+		} else {
+			s.Log.InfoContext(ctx, "Already passed this quiz before. No XP awarded.", "userID", session.UserID, "quizID", session.QuizID)
+		}
+	}
+
+	// 5. Buat respons final untuk dikirim ke pengguna.
+	finalResult := &web.FinalResultResponse{
+		FinalScore: session.CurrentScore,
+		XPEarned:   xpToUpdate,
+	}
+
+	// 6. Jalankan proses penyimpanan ke DB di latar belakang.
+	go func() {
+		bgCtx := context.Background()
+
+		// Selalu simpan riwayat pengerjaan.
+		attempt := &domain.QuizAttempts{UserID: session.UserID, QuizID: session.QuizID, Score: uint(session.CurrentScore)}
+		if err := s.QuizRepository.CreateQuizAttempt(bgCtx, attempt); err != nil {
+			s.Log.ErrorContext(bgCtx, "failed to create quiz attempt", "error", err)
+		}
+
+		// Ambil profil untuk menghitung streak.
+		profile, err := s.UserProfileRepository.FindUserProfileByID(bgCtx, session.UserID)
+		if err != nil {
+			s.Log.ErrorContext(bgCtx, "failed to find user profile for update", "error", err, "userID", session.UserID)
+			return
+		}
+
+		// Hitung streak baru.
+		var newStreak uint
+		today := time.Now()
+		yesterday := today.AddDate(0, 0, -1)
+		if profile.LastActiveAt.Year() == yesterday.Year() && profile.LastActiveAt.YearDay() == yesterday.YearDay() {
+			newStreak = profile.CurrentStreak + 1
+		} else if profile.LastActiveAt.Year() != today.Year() || profile.LastActiveAt.YearDay() != today.YearDay() {
+			newStreak = 1
+		} else {
+			newStreak = profile.CurrentStreak
+		}
+
+		// Panggil repository untuk update profil.
+		if err := s.UserProfileRepository.UpdateXPAndStreak(bgCtx, session.UserID, xpToUpdate, newStreak, today); err != nil {
+			s.Log.ErrorContext(bgCtx, "failed to update user xp and streak", "error", err, "userID", session.UserID)
+		}
+		s.Log.InfoContext(bgCtx, "user profile updated after quiz", "userID", session.UserID, "xp_earned", xpToUpdate, "new_streak", newStreak)
+	}()
+
+	return finalResult, nil
+}
+
 func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAnswerRequest) (web.SubmitAnswerResponse, error) {
 	s.Log.InfoContext(ctx, "submit answer process started", "sessionID", request.SessionID)
 
@@ -210,79 +287,13 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 
 	//logika jika kuis jika sudah selesai & dan hanya menambahkan xp_earned ketika first ambil quiz
 	if session.CurrentQuestionIndex >= len(session.QuestionIDs) {
-		response.QuizFinished = true
-
-		//hituing skor kelulusan (70% dari semua soal == lulus)
-		maxPossibleScore := float64(len(session.QuestionIDs) * 10) //10 score setiap soal
-		passingScore := uint(math.Ceil(maxPossibleScore * 0.7))
-
-		//cek kelulusan
-		userPassedThisAttempt := uint(session.CurrentScore) >= passingScore
-
-		//repo untuk mengambil jumlah xp_earned
-		quiz, err := s.QuizRepository.FindByID(ctx, session.QuizID)
+		finalResult, err := s.finishQuizSession(ctx, session)
 		if err != nil {
-			s.Log.ErrorContext(ctx, "failed to get quiz details for finalization", "error", err)
-			return web.SubmitAnswerResponse{}, nil
+			s.Log.ErrorContext(ctx, "failed to finish quiz session", "error", err)
+			return web.SubmitAnswerResponse{}, err
 		}
-
-		xpToUpdate := 0
-
-		if userPassedThisAttempt {
-			hasPassedBefore, err := s.QuizAttemptRepository.HasUserPassedQuizBefore(ctx, session.UserID, session.QuizID, passingScore)
-			if err != nil {
-				s.Log.ErrorContext(ctx, "failed to check past passing status", "error", err)
-			} else if !hasPassedBefore {
-				xpToUpdate = int(quiz.XpReward)
-				s.Log.InfoContext(ctx, "First time passing quiz. Awarding XP.", "userID", session.UserID, "quizID", session.QuizID)
-			} else {
-				s.Log.InfoContext(ctx, "Already passed this quiz before. No XP awarded.", "userID", session.UserID, "quizID", session.QuizID)
-			}
-		}
-
-		response.FinalResult = &web.FinalResultResponse{
-			FinalScore: session.CurrentScore,
-			XPEarned:   xpToUpdate,
-		}
-
-		//goroutine agar tidak memblokir response, dan kirim ke response
-		go func() {
-			//membuat context baru agar tidak terpengaruh oleh timout request
-			bgCtx := context.Background()
-
-			attempt := &domain.QuizAttempts{UserID: session.UserID, QuizID: session.QuizID, Score: uint(session.CurrentScore)}
-			if err := s.QuizRepository.CreateQuizAttempt(bgCtx, attempt); err != nil {
-				s.Log.ErrorContext(bgCtx, "failed to create quiz attempt", "error", err)
-			}
-
-			//======================
-			//menambah streak dan XP
-			//======================
-			// ambil userID
-			profile, err := s.UserProfileRepository.FindUserProfileByID(ctx, attempt.UserID)
-			if err != nil {
-				s.Log.ErrorContext(bgCtx, "failed to find user profile for update", "error", err, "userID", session.UserID)
-				return
-			}
-
-			//hitung streak
-			var newStreak uint
-			today := time.Now()
-			yesterday := today.AddDate(0, 0, -1)
-
-			if profile.LastActiveAt.Year() == yesterday.Year() && profile.LastActiveAt.YearDay() == yesterday.YearDay() { //jika kemarin aktif streak ditambah 1
-				newStreak = profile.CurrentStreak + 1
-			} else if profile.LastActiveAt.Year() == today.Year() || profile.LastActiveAt.YearDay() != today.YearDay() { //jika hari doang streak reset ke 1
-				newStreak = 1
-			} else {
-				newStreak = profile.CurrentStreak // selain itu streak samakan dengan currentStreak
-			}
-
-			//repository untuk update streak dan xp dari xpToUpdate
-			if err := s.UserProfileRepository.UpdateXPAndStreak(bgCtx, session.UserID, xpToUpdate, newStreak, today); err != nil {
-				s.Log.ErrorContext(bgCtx, "failed to update user xp and streak", "error", err, "userID", session.UserID)
-			}
-		}()
+		response.QuizFinished = true
+		response.FinalResult = finalResult
 
 		//hapus session dari memory
 		s.sessionMutex.Lock()
@@ -331,83 +342,39 @@ func (s *QuizServiceImpl) SubmitAnswer(ctx context.Context, request web.SubmitAn
 func (s *QuizServiceImpl) SubmitDrawingAnswer(ctx context.Context, request web.SubmitDrawingRequest) (web.SubmitAnswerResponse, error) {
 	s.Log.InfoContext(ctx, "submit drawing answer process started", "sessionID", request.SessionID)
 
-	//validasi request
 	if err := s.Validate.Struct(request); err != nil {
 		s.Log.ErrorContext(ctx, "validation error for drawing submission", "error", err)
 		return web.SubmitAnswerResponse{}, err
 	}
 
-	//ambil sesi kuis yang aktif dari struct session
-	s.sessionMutex.Lock()
+	s.sessionMutex.RLock()
 	session, ok := s.sessions[request.SessionID]
-	s.sessionMutex.Unlock()
+	s.sessionMutex.RUnlock()
 	if !ok {
 		s.Log.WarnContext(ctx, "session does not exist for drawing submission", "sessionID", request.SessionID)
 		return web.SubmitAnswerResponse{}, errors.New("invalid session ID")
 	}
 
-	//tambahkan score
-	session.CurrentScore += request.Score
+	if request.IsCorrect {
+		session.CurrentScore += 10 // Skor standar
+	}
 	session.CurrentQuestionIndex++
-	s.Log.InfoContext(ctx, "drawing score submitted and accepted", "sessionID", request.SessionID, "score_added", request.Score)
 
-	//response dasar
 	response := web.SubmitAnswerResponse{
-		IsCorrect:       request.Score > 0,
+		IsCorrect:       request.IsCorrect,
 		CorrectOptionID: 0,
 	}
 
-	//cek apakah question selesai atau lanjut
 	if session.CurrentQuestionIndex >= len(session.QuestionIDs) {
-		response.QuizFinished = true
-		xpEarned := session.CurrentScore // 1 skor 1 xp
-		response.FinalResult = &web.FinalResultResponse{
-			FinalScore: xpEarned,
-			XPEarned:   xpEarned,
+		// Panggil helper terpusat yang SAMA untuk menangani akhir kuis
+		finalResult, err := s.finishQuizSession(ctx, session)
+		if err != nil {
+			return web.SubmitAnswerResponse{}, err
 		}
+		response.QuizFinished = true
+		response.FinalResult = finalResult
 
-		//goroutine agar tidak memblokir response, dan kirim ke response
-		go func() {
-			//membuat context baru agar tidak terpengaruh oleh timout request
-			bgCtx := context.Background()
-
-			//assign struct kuis session ke quizAttempt
-			attempt := &domain.QuizAttempts{UserID: session.UserID, QuizID: session.QuizID, Score: uint(session.CurrentScore)}
-			if err := s.QuizRepository.CreateQuizAttempt(bgCtx, attempt); err != nil {
-				s.Log.ErrorContext(bgCtx, "failed to create quiz attempt", "error", err)
-			}
-
-			//======================
-			//menambah streak dan XP
-			//======================
-			// ambil userID
-			profile, err := s.UserProfileRepository.FindUserProfileByID(ctx, attempt.UserID)
-			if err != nil {
-				s.Log.ErrorContext(bgCtx, "failed to find user profile for update", "error", err, "userID", session.UserID)
-				return
-			}
-
-			//hitung streak
-			var newStreak uint
-			today := time.Now()
-			yesterday := today.AddDate(0, 0, -1)
-
-			if profile.LastActiveAt.Year() == yesterday.Year() && profile.LastActiveAt.YearDay() == yesterday.YearDay() { //jika kemarin aktif streak ditambah 1
-				newStreak = profile.CurrentStreak + 1
-			} else if profile.LastActiveAt.Year() == today.Year() || profile.LastActiveAt.YearDay() != today.YearDay() { //jika hari doang streak reset ke 1
-				newStreak = 1
-			} else {
-				newStreak = profile.CurrentStreak // selain itu streak samakan dengan currentStreak
-			}
-
-			//repository untuk update streak dan xp
-			if err := s.UserProfileRepository.UpdateXPAndStreak(bgCtx, session.UserID, xpEarned, newStreak, today); err != nil {
-				s.Log.ErrorContext(bgCtx, "failed to update user xp and streak", "error", err, "userID", session.UserID)
-			}
-			s.Log.InfoContext(bgCtx, "user profile updated after quiz", "userID", session.UserID, "xp_earned", xpEarned, "new_streak", newStreak)
-		}()
-
-		//hapus session dari memory
+		// Hapus sesi dari memori
 		s.sessionMutex.Lock()
 		delete(s.sessions, request.SessionID)
 		s.sessionMutex.Unlock()
