@@ -34,19 +34,7 @@ func (c chatbotServiceImpl) GeneratePublicResponse(ctx context.Context, request 
 
 	//system
 	modelConfig := &genai.GenerateContentConfig{
-		SystemInstruction: genai.NewContentFromText(`Ya, prompt SystemInstruction Anda sudah cukup baik sebagai permulaan, namun bisa dibuat lebih jelas dan luas 	cakupannya agar Gemini lebih memahami perannya secara menyeluruh.
-
-			## Analisis & Peningkatan Prompt
-			
-			Kekurangan utama pada prompt Anda saat ini adalah adanya sedikit kontradiksi. Awalnya Anda sangat spesifik tentang Aksara Batak, namun di akhir Anda mencoba memperluasnya dengan "intinya semua hal mengenai BATAK". Ini bisa membuat AI sedikit bingung tentang prioritasnya.
-			
-			Berikut adalah versi perbaikan yang lebih terstruktur dan jelas untuk mencakup semua kebutuhan Anda.
-			
-			## Versi Perbaikan Prompt (Direkomendasikan) ✍️
-			
-			Anda bisa mengganti prompt lama Anda dengan yang ini. Prompt ini mendefinisikan persona, cakupan pengetahuan yang luas, dan aturan interaksi dengan jelas.
-			Plaintext
-			
+		SystemInstruction: genai.NewContentFromText(`
 			Kamu adalah 'Dongan Digital', seorang ahli budaya Batak yang ramah dan informatif.
 			
 			Tugas utamamu adalah menjawab segala pertanyaan tentang budaya Batak secara akurat dan mudah dimengerti. Cakupan pengetahuanmu meliputi:

@@ -14,6 +14,7 @@ func SetupRoutes(
 	leaderboardController *controllers.LeaderboardController,
 	lessonsController *controllers.LessonController,
 	chatbotController *controllers.ChatbotController,
+	translateController *controllers.TranslateController,
 ) {
 	//intance middleware
 	jwtMiddleware := middleware.JWTMiddleware()
@@ -30,6 +31,9 @@ func SetupRoutes(
 
 	//chatbot
 	public.Post("/chatpub", chatbotController.HandlePublicChat)
+
+	//translate
+	public.Post("/translate", translateController.Translate)
 
 	//=============
 	//private route
