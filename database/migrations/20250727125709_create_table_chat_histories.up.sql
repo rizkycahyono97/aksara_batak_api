@@ -1,11 +1,11 @@
 CREATE TABLE chat_histories (
-    id SERIAL PRIMARY KEY,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(36) NOT NULL,
-    role VARCHAR(20) NOT NULL,
     message TEXT NOT NULL,
+    reply TEXT NOT NULL,
+    message_type VARCHAR(30) DEFAULT 'text',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         CONSTRAINT fk_users
         FOREIGN KEY(user_id)
         REFERENCES users(uuid)

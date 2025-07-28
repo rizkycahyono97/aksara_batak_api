@@ -30,7 +30,7 @@ func SetupRoutes(
 	public.Get("/leaderboard", leaderboardController.GetLeaderboards)
 
 	//chatbot
-	public.Post("/chatpub", chatbotController.HandlePublicChat)
+	public.Post("/chat/public", chatbotController.HandlePublicChat)
 
 	//translate
 	public.Post("/translate", translateController.Translate)
@@ -54,4 +54,7 @@ func SetupRoutes(
 	// lessons
 	private.Get("/lessons", lessonsController.GetAllLessons)
 	private.Get("/lessons/:lessonID/quizzes", lessonsController.GetQuizzesByLessonID)
+
+	//chatbot
+	private.Post("/chat/private", chatbotController.HandlePrivateChat)
 }

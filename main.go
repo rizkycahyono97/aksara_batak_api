@@ -40,6 +40,7 @@ func main() {
 	quizRepo := repositories.NewQuizRepository(config.DB)
 	quizAttemptRepo := repositories.NewQuizAttemptRepository(config.DB)
 	lessonRepo := repositories.NewLessonRepository(config.DB)
+	chatRepo := repositories.NewChatHistoryRepository(config.DB)
 
 	// 2. Inisialisasi semua SERVICE
 	authService := services.NewAuthService(authRepo, userProfileRepo, validate, logger)
@@ -47,7 +48,7 @@ func main() {
 	quizService := services.NewQuizService(quizRepo, quizAttemptRepo, validate, logger, userProfileRepo)
 	leaderboardService := services.NewLeaderboardService(userProfileRepo, logger)
 	lessonService := services.NewLessonService(lessonRepo, validate, logger)
-	chatbotService := services.NewChatbotService(logger)
+	chatbotService := services.NewChatbotService(chatRepo, logger)
 	translateService := services.NewTranslateService(logger)
 
 	// 3. Inisialisasi semua CONTROLLER

@@ -14,4 +14,7 @@ type Users struct {
 
 	//1:1 BelongsTo user_profiles
 	UserProfiles UserProfiles `json:"user_profiles" gorm:"foreignKey:user_id;references:uuid;OnDelete:CASCADE"`
+
+	//1:M HasMany to chat_history
+	ChatHistories []ChatHistories `json:"chat_histories" gorm:"foreignKey:user_id;references:uuid;onDelete:CASCADE"`
 }
