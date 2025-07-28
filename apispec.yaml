@@ -266,7 +266,6 @@ components:
           example: "Apa arti horas?"
           maxLength: 1000
           description: Pesan untuk chatbot
-
     PrivateChatRequest:
       type: object
       required:
@@ -277,7 +276,6 @@ components:
           example: "Bagaimana menulis 'terima kasih' dalam aksara Batak?"
           maxLength: 1000
           description: Pesan untuk chatbot
-
     TranslateRequest:
       type: object
       required:
@@ -299,7 +297,6 @@ components:
             - id_to_batak_latin
           example: "batak_aksara_to_id"
           description: Arah translasi
-
     ChatResponse:
       type: object
       properties:
@@ -307,7 +304,6 @@ components:
           type: string
           example: "Horas artinya 'halo' dalam Bahasa Batak Toba"
           description: Jawaban dari chatbot
-
     ChatHistoryResponse:
       type: object
       properties:
@@ -318,7 +314,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatHistoryItem'
-
     ChatHistoryItem:
       type: object
       properties:
@@ -332,7 +327,6 @@ components:
           type: string
           format: date-time
           example: "2023-10-05T08:30:00Z"
-
     TranslateResponse:
       type: object
       properties:
