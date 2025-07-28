@@ -256,6 +256,99 @@ components:
           type: string
           format: uri
           example: "/assets/icons/lesson_aksara.png"
+    PublicChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: "Apa arti horas?"
+          maxLength: 1000
+          description: Pesan untuk chatbot
+
+    PrivateChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: "Bagaimana menulis 'terima kasih' dalam aksara Batak?"
+          maxLength: 1000
+          description: Pesan untuk chatbot
+
+    TranslateRequest:
+      type: object
+      required:
+        - text
+        - direction
+      properties:
+        text:
+          type: string
+          example: "ᯂᯬᯒᯘ᯲"
+          description: Teks yang akan diterjemahkan
+        direction:
+          type: string
+          enum:
+            - batak_aksara_to_id
+            - batak_aksara_to_batak_latin
+            - batak_latin_to_batak_aksara
+            - batak_latin_to_id
+            - id_to_batak_aksara
+            - id_to_batak_latin
+          example: "batak_aksara_to_id"
+          description: Arah translasi
+
+    ChatResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+          example: "Horas artinya 'halo' dalam Bahasa Batak Toba"
+          description: Jawaban dari chatbot
+
+    ChatHistoryResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+          example: "ᯔᯄᯮᯞᯪᯀᯗᯩ adalah 'mauliate' (terima kasih)"
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatHistoryItem'
+
+    ChatHistoryItem:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Apa arti horas?"
+        reply:
+          type: string
+          example: "Artinya salam dalam Bahasa Batak"
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-10-05T08:30:00Z"
+
+    TranslateResponse:
+      type: object
+      properties:
+        original_text:
+          type: string
+          example: "ᯂᯬᯒᯘ᯲"
+        translated_text:
+          type: string
+          example: "Horas"
+        direction:
+          type: string
+          example: "BATAK_TO_LATIN"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-10-05T08:30:00Z"
 
 paths:
   /register:
@@ -542,3 +635,85 @@ paths:
           description: Format ID Pelajaran tidak valid (bukan angka).
         '500':
           description: Internal Server Error
+  /chat/public:
+    post:
+      tags:
+        - Chatbot
+      summary: Chat publik tanpa autentikasi
+      description: Berinteraksi dengan chatbot untuk pertanyaan umum tentang budaya Batak
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicChatRequest'
+      responses:
+        '200':
+          description: Sukses mendapatkan respon chatbot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Request tidak valid
+
+        '500':
+          description: Kesalahan server
+
+  /chat/private:
+    post:
+      tags:
+        - Chatbot
+      summary: Chat pribadi dengan history
+      description: Berinteraksi dengan chatbot yang mengingat percakapan sebelumnya (memerlukan autentikasi)
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivateChatRequest'
+      responses:
+        '200':
+          description: Sukses mendapatkan respon beserta history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatHistoryResponse'
+        '401':
+          description: Tidak terautentikasi
+
+        '500':
+          description: Kesalahan server
+
+  /translate:
+    post:
+      tags:
+        - Translation
+      summary: Translasi aksara Batak
+      description: Translasi antara aksara Batak, latin, dan Bahasa Indonesia, dengan direction 
+        1. batak_aksara_to_id
+        2. batak_aksara_to_batak_latin
+        3. batak_latin_to_batak_aksara
+        4. batak_latin_to_id
+        5. id_to_batak_aksara
+        6. id_to_batak_latin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslateRequest'
+      responses:
+        '200':
+          description: Hasil translasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslateResponse'
+        '400':
+          description: Request tidak valid
+
+        '500':
+          description: Kesalahan server
