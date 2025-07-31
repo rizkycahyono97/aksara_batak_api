@@ -57,7 +57,7 @@ func main() {
 	quizController := controllers.NewQuizController(quizService, logger)
 	leaderboardController := controllers.NewLeaderboardController(leaderboardService, logger)
 	lessonsController := controllers.NewLessonController(lessonService, quizService, logger)
-	chatbotController := controllers.NewChatbotController(chatbotService, logger)
+	chatbotController := controllers.NewChatbotController(chatbotService, logger, validate)
 	translateController := controllers.NewTranslateController(translateService, logger)
 
 	//initialize fiber,routes,static

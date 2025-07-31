@@ -57,4 +57,5 @@ func SetupRoutes(
 
 	//chatbot
 	private.Post("/chat/private", chatbotController.HandlePrivateChat)
+	private.Get("/chat/private/histories", chatbotController.GetChatPrivateHistory)
 }

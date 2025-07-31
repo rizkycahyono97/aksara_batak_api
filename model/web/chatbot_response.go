@@ -25,3 +25,9 @@ type ChatHistories struct {
 	// Users object disembunyikan, atau bisa juga ditambahkan json:"-"
 	// Users        UserResponse   `json:"users,omitempty"` // jika ingin ditampilkan nanti
 }
+
+type ChatHistoriesItemResponse struct {
+	//Role      string    `json:"role"`
+	Message   string    `json:"message"`
+	Timestamp time.Time `json:"timestamp"`
+}

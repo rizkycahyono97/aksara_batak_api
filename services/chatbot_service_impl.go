@@ -183,3 +183,23 @@ func (c chatbotServiceImpl) GeneratePrivateResponse(ctx context.Context, request
 		History: historyResponse,
 	}, nil
 }
+
+func (c chatbotServiceImpl) GetChatPrivateHistory(ctx context.Context, userID string) ([]web.ChatHistoriesItemResponse, error) {
+	//repo
+	histories, err := c.ChatRepository.GetLastFiveByUserID(ctx, userID)
+	if err != nil {
+		c.Log.Error("Gagal mengambil riwayat chat dari repository", "userID", userID, "error", err)
+		return nil, err
+	}
+
+	//DTO
+	var historyResponse []web.ChatHistoriesItemResponse
+	for _, history := range histories {
+		historyResponse = append(historyResponse, web.ChatHistoriesItemResponse{
+			Message:   history.Message,
+			Timestamp: history.CreatedAt,
+		})
+	}
+
+	return historyResponse, nil
+}

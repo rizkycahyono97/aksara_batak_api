@@ -8,4 +8,5 @@ import (
 type ChatbotService interface {
 	GeneratePublicResponse(ctx context.Context, request web.ChatbotRequest) (web.ChatbotResponse, error)
 	GeneratePrivateResponse(ctx context.Context, request web.ChatbotRequest) (web.ChatbotResponse, error)
+	GetChatPrivateHistory(ctx context.Context, userID string) ([]web.ChatHistoriesItemResponse, error)
 }

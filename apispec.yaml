@@ -653,7 +653,6 @@ paths:
 
         '500':
           description: Kesalahan server
-
   /chat/private:
     post:
       tags:
@@ -680,7 +679,6 @@ paths:
 
         '500':
           description: Kesalahan server
-
   /translate:
     post:
       tags:
