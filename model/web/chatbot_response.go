@@ -29,5 +29,6 @@ type ChatHistories struct {
 type ChatHistoriesItemResponse struct {
 	//Role      string    `json:"role"`
 	Message   string    `json:"message"`
+	Reply     string    `json:"reply"`
 	Timestamp time.Time `json:"timestamp"`
 }

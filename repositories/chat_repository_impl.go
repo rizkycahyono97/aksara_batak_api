@@ -26,19 +26,19 @@ func (c ChatHistoryRepositoryImpl) Create(ctx context.Context, chat *domain.Chat
 
 	//auto trim jika melebihi batas
 	go func() {
-		_ = c.DeleteExcess(context.Background(), chat.UserID, 5)
+		_ = c.DeleteExcess(context.Background(), chat.UserID, 15)
 	}()
 
 	return nil
 }
 
 // mengambil 5 history terakhir
-func (c ChatHistoryRepositoryImpl) GetLastFiveByUserID(ctx context.Context, userID string) ([]domain.ChatHistories, error) {
+func (c ChatHistoryRepositoryImpl) GetLastFifteenByUserID(ctx context.Context, userID string) ([]domain.ChatHistories, error) {
 	var histories []domain.ChatHistories
 	err := c.DB.WithContext(ctx).
 		Where("user_id = ?", userID).
 		Order("created_at DESC").
-		Limit(5).
+		Limit(15).
 		Find(&histories).Error
 	if err != nil {
 		return []domain.ChatHistories{}, err

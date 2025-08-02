@@ -111,7 +111,7 @@ func (c chatbotServiceImpl) GeneratePrivateResponse(ctx context.Context, request
 
 	//ambil history
 	start := time.Now()
-	histories, err := c.ChatRepository.GetLastFiveByUserID(ctx, request.Userid)
+	histories, err := c.ChatRepository.GetLastFifteenByUserID(ctx, request.Userid)
 	if err != nil {
 		c.Log.ErrorContext(ctx, "Failed to get chat history",
 			"error", err,
@@ -186,7 +186,7 @@ func (c chatbotServiceImpl) GeneratePrivateResponse(ctx context.Context, request
 
 func (c chatbotServiceImpl) GetChatPrivateHistory(ctx context.Context, userID string) ([]web.ChatHistoriesItemResponse, error) {
 	//repo
-	histories, err := c.ChatRepository.GetLastFiveByUserID(ctx, userID)
+	histories, err := c.ChatRepository.GetLastFifteenByUserID(ctx, userID)
 	if err != nil {
 		c.Log.Error("Gagal mengambil riwayat chat dari repository", "userID", userID, "error", err)
 		return nil, err
@@ -197,6 +197,7 @@ func (c chatbotServiceImpl) GetChatPrivateHistory(ctx context.Context, userID st
 	for _, history := range histories {
 		historyResponse = append(historyResponse, web.ChatHistoriesItemResponse{
 			Message:   history.Message,
+			Reply:     history.Reply,
 			Timestamp: history.CreatedAt,
 		})
 	}
