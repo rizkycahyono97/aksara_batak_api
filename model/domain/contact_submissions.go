@@ -8,7 +8,7 @@ type ContactSubmissions struct {
 	UpdatedAt time.Time
 	DeletedAt time.Time
 	Name      string `json:"name" gorm:"type:varchar(255);not null"`
-	Email
-	Message string `json:"message" gorm:"type:text;not null"`
-	Status  string `json:"status" gorm:"type:varchar(50);not null;default 'baru'"`
+	Email     string `json:"email" gorm:"type:varchar(255);not null;email"`
+	Message   string `json:"message" gorm:"type:text;not null"`
+	Status    string `json:"status" gorm:"type:varchar(50);not null;default 'baru'"`
 }

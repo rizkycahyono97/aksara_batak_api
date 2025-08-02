@@ -41,6 +41,7 @@ func main() {
 	quizAttemptRepo := repositories.NewQuizAttemptRepository(config.DB)
 	lessonRepo := repositories.NewLessonRepository(config.DB)
 	chatRepo := repositories.NewChatHistoryRepository(config.DB)
+	contactRepo := repositories.NewContactSubmissionsRepository(config.DB)
 
 	// 2. Inisialisasi semua SERVICE
 	authService := services.NewAuthService(authRepo, userProfileRepo, validate, logger)
@@ -50,6 +51,8 @@ func main() {
 	lessonService := services.NewLessonService(lessonRepo, validate, logger)
 	chatbotService := services.NewChatbotService(chatRepo, logger)
 	translateService := services.NewTranslateService(logger)
+	emailService := services.NewEmailService(logger)
+	contactUsService := services.NewContactUsService(contactRepo, emailService, logger)
 
 	// 3. Inisialisasi semua CONTROLLER
 	authController := controllers.NewAuthController(authService, logger)
@@ -59,12 +62,23 @@ func main() {
 	lessonsController := controllers.NewLessonController(lessonService, quizService, logger)
 	chatbotController := controllers.NewChatbotController(chatbotService, logger, validate)
 	translateController := controllers.NewTranslateController(translateService, logger)
+	contactUsController := controllers.NewContactUsController(contactUsService, logger, validate)
 
 	//initialize fiber,routes,static
 	app := fiber.New()
 	app.Static("/assets", "./public")
 	app.Use(cors.New(middleware.SetupCors())) // CORS
-	routes.SetupRoutes(app, authController, quizController, userProfileController, leaderboardController, lessonsController, chatbotController, translateController)
+	routes.SetupRoutes(
+		app,
+		authController,
+		quizController,
+		userProfileController,
+		leaderboardController,
+		lessonsController,
+		chatbotController,
+		translateController,
+		contactUsController,
+	)
 
 	//gracefull shutdown
 	quit := make(chan os.Signal, 1)
