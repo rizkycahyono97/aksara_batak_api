@@ -49,7 +49,7 @@ func (e emailServiceImpl) SendContactNotification(ctx context.Context, subject s
 		"\r\n"+
 		"%s\r\n", receiverEmail, subject, body))
 
-	addr := fmt.Sprintf("%s:%s", port, host)
+	addr := fmt.Sprintf("%s:%s", host, port)
 
 	err := smtp.SendMail(addr, auth, senderEmail, []string{receiverEmail}, message)
 	if err != nil {

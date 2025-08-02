@@ -44,9 +44,9 @@ func (c contactUsServiceImpl) ProcessSubmission(ctx context.Context, request web
 	}
 	c.Log.Info("Pesan berhasil disimpan ke database", "from_email", request.Email)
 
-	subject := fmt.Sprintf("Pesan Baru 'Contact Us' dari: %s", request.Name)
+	subject := fmt.Sprintf("Pesan Baru 'Poda-Horas' dari: %s", request.Name)
 	body := fmt.Sprintf(
-		"Anda telah menerima pesan baru melalui formulir 'Hubungi Kami'.\n\n+"+
+		"Anda telah menerima pesan baru melalui formulir 'Contact-Us Poda Horas'.\n\n"+
 			"Dari: %s\n"+
 			"Email: %s\n"+
 			"Message: %s\n",
